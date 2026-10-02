@@ -55,6 +55,7 @@
 
 ## Phase 7 — UI Polish
 - [COMPLETED] Preserve and smoke-check the current Streamlit layout
+- [COMPLETED] Add a visible Overview upload and replace-dataset control
 - [COMPLETED] Add clear upload validation feedback and safe fallback messages
 - [COMPLETED] Keep cleaned data and analysis results tied to the selected dataset
 

@@ -5,20 +5,43 @@ Displays top-level business KPIs, trends, and business signals.
 Every metric is computed from actual data — nothing is fabricated.
 """
 
+import logging
+
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from src.data.loader import load_file
 from src.utils.formatting import format_currency, format_number, format_percentage, severity_emoji
+
+logger = logging.getLogger(__name__)
 
 
 def render():
     """Render the Overview page."""
     st.title("📊 Business Overview")
     st.caption("Real-time view of your business performance based on uploaded data.")
+
+    if st.session_state.get("cleaned_df") is None:
+        st.markdown("### Upload your business data")
+        st.caption("Start with a CSV or Excel file. You can review and clean it in Data Explorer.")
+        uploaded_file = st.file_uploader(
+            "Choose a CSV or Excel file",
+            type=["csv", "xlsx", "xls"],
+            key="overview_data_upload",
+        )
+        _load_uploaded_file(uploaded_file)
+    else:
+        with st.expander("Upload or replace dataset"):
+            uploaded_file = st.file_uploader(
+                "Choose a CSV or Excel file",
+                type=["csv", "xlsx", "xls"],
+                key="overview_data_upload",
+            )
+            _load_uploaded_file(uploaded_file)
     
     # Check if data is loaded
     if st.session_state.get("cleaned_df") is None:
-        st.info("👈 Upload your data in the **Data Explorer** page to see the overview.")
+        st.markdown("Or try the built-in synthetic dataset:")
         
         # Offer to load sample data
         if st.button("🚀 Load Sample Data to Get Started"):
@@ -169,3 +192,33 @@ def _load_sample_data():
         
     except Exception as e:
         st.error(f"Failed to load sample data: {e}")
+
+
+def _load_uploaded_file(uploaded_file):
+    """Load a selected file once and clear results from the previous dataset."""
+    if uploaded_file is None:
+        return
+
+    signature = (
+        uploaded_file.name,
+        uploaded_file.size,
+        getattr(uploaded_file, "file_id", None),
+    )
+    if signature == st.session_state.get("overview_upload_signature"):
+        return
+
+    try:
+        df, metadata = load_file(uploaded_file)
+        from ui.session_state import clear_analysis_results
+
+        clear_analysis_results(st.session_state)
+        st.session_state.df = df
+        st.session_state.loading_metadata = metadata
+        st.session_state.overview_upload_signature = signature
+        st.success(f"Loaded {metadata['rows_loaded']:,} rows. Open Data Explorer to validate and clean the file.")
+        st.rerun()
+    except ValueError as error:
+        st.error(f"Could not load this file: {error}")
+    except Exception:
+        logger.exception("Could not load business data from the Overview page")
+        st.error("Could not load this file. Check that it is a valid CSV or Excel workbook.")

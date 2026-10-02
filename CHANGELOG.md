@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### 2026-10-02 — UI Polish and Hardening
+- **fix:** Make CSV/Excel upload available from the Overview screen, including after data is loaded
 - **fix:** Normalize uploaded column names and reject duplicate normalized headers
 - **fix:** Validate empty datasets, infinite numeric values, discount bounds, and return counts
 - **fix:** Clear stale analysis results when the source dataset changes

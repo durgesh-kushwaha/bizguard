@@ -18,6 +18,7 @@ None — clean state.
 
 ## WHAT WORKS
 - Data loading (CSV, Excel, sample data)
+- Direct CSV/Excel upload from Overview, with validation and cleaning in Data Explorer
 - Data validation with detailed error reporting
 - Data cleaning with documented rules
 - Feature engineering (temporal, lag, rolling, business features)

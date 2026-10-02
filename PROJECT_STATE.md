@@ -33,6 +33,7 @@
 - ✅ SQLite persistence (save/retrieve/delete decisions)
 - ✅ Streamlit app with 7-page navigation
 - ✅ Overview page (KPIs, trends, signals)
+- ✅ CSV/Excel upload available from Overview and Data Explorer
 - ✅ Data Explorer page (upload, validate, clean, Spark)
 - ✅ Analytics page (revenue, products, marketing, inventory, regional)
 - ✅ Forecasting page (train, evaluate, forecast)
