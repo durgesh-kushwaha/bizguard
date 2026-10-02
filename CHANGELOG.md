@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-02 — Daily Forecast Accuracy
+- **fix:** Forecast daily totals rather than per-transaction quantities so forecast and history share units
+- **feat:** Select Random Forest, Gradient Boosting, or weekly seasonal-naive forecasts using rolling-origin WAPE
+- **fix:** Use chronological holdouts, date-grouped boundaries, shifted rolling features, and remove target-derived predictors
+- **test:** Add forecast-scale, product-scope, and time-split regression coverage
+
 ### 2026-10-02 — Stable Cloud Dependencies
 - **fix:** Remove PySpark and Java from the Streamlit Cloud install so the app starts on the working Pandas path
 - **docs:** Keep PySpark available as an optional local dependency via `requirements-spark.txt`

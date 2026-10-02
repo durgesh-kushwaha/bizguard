@@ -63,11 +63,11 @@
 ## Phase 8 — Testing & Hardening
 - [COMPLETED] Data tests (21 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
-- [COMPLETED] ML tests (8 tests passing)
+- [COMPLETED] ML tests (13 tests passing)
 - [COMPLETED] Utility tests (7 tests passing)
 - [COMPLETED] BDA KPI and Spark pipeline tests (5 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (52 tests)
+- [COMPLETED] Full suite passes (57 tests)
 - [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
 - [COMPLETED] Keep Streamlit Community Cloud on the Pandas path; make Spark optional for local use
 

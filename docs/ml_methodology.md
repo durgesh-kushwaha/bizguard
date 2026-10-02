@@ -1,53 +1,26 @@
 # ML Methodology — BizGuard
 
-## Objective
+## Prediction Targets
 
-Predict future product demand (quantity) to support business decisions.
+The training tab predicts quantity on a transaction row. The forecast tab has a separate, time-series target: the sum of units sold per calendar day. That daily target matches the historical chart and the inventory decision horizon.
 
-## Target Variable
+## Transaction Model
 
-- **quantity** — Units sold per order
-- Aggregated predictions provide monthly/weekly demand forecasts
+The transaction pipeline includes calendar, product/business, and historical quantity features. Rolling averages and deviations are shifted so the current target is never part of its own feature. Quantity-derived ratios are excluded from predictors.
 
-## Feature Engineering Pipeline
+The latest 20% of observations are held out in date order. Linear Regression and Random Forest are compared on that future slice using MAE, RMSE, and R². This is a single chronological holdout, not a claim of performance across every future period.
 
-1. **Temporal Features**: Month, day of week, quarter, weekend flag
-2. **Cyclical Encoding**: sin/cos transformation for month (Dec→Jan continuity)
-3. **Lag Features**: Previous 1, 7, 14, 30-day quantities
-4. **Rolling Statistics**: 7, 14, 30-day rolling mean and standard deviation
-5. **Business Features**: Price ratios, marketing per unit, return rate
+## Daily Demand Forecast
 
-## Models
+Transaction quantities are summed per date. Missing calendar dates are filled with zero so lag lengths mean days rather than transaction rows. The model uses:
 
-### Linear Regression (Baseline)
-- Formula: ŷ = β₀ + Σ(βᵢxᵢ)
-- Purpose: Establish performance baseline
-- Advantage: Simple, interpretable coefficients
+- Recent demand at 1, 7, 14, and 28 days
+- Trailing 7-, 14-, and 28-day averages and variability
+- Weekly and annual calendar cycles
+- A continuous trend index
 
-### Random Forest Regressor
-- Ensemble of 100 decision trees
-- Max depth: 15
-- Purpose: Capture non-linear patterns
-- Advantage: Feature importance, better accuracy
-
-## Evaluation Protocol
-
-- 80/20 train/test split (random, seed=42)
-- Metrics: MAE, RMSE, R²
-- Actual vs predicted visualization
-- Residual analysis
-
-## Forecasting
-
-- Creates future feature rows from recent historical values
-- Temporal features computed from future dates
-- Lag/rolling features use recent historical averages
-- Predictions clamped to non-negative values
+Random Forest and HistGradientBoosting are compared with a weekly seasonal-naive forecast using three rolling-origin folds. Each fold trains only on dates before its validation window and forecasts forward recursively. The lowest-WAPE method is selected; the seasonal baseline remains eligible and wins when the ML models do not improve on it. Reported MAE and WAPE come from those held-out daily predictions.
 
 ## Limitations
 
-- Synthetic data limits model realism
-- No external features (weather, events, competitor actions)
-- Correlation-based, not causal
-- May not generalize to unseen market conditions
-- Feature leakage is mitigated but lag features use simplifications
+The bundled dataset is synthetic. Forecast quality depends on the uploaded history and cannot be guaranteed. Promotions, stockouts, price changes, holidays, and market shifts are not included unless represented in the data. Backtests are evidence about historical periods, not certainty about future demand.

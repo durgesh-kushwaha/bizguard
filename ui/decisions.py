@@ -201,23 +201,12 @@ def _render_marketing_simulator(df: pd.DataFrame):
 
 
 def _get_forecast_demand(df, product_id):
-    """Get ML forecast demand if models are trained."""
-    if st.session_state.get("models") is None:
-        return None
-    
+    """Return a validated daily-demand forecast for inventory decisions."""
     try:
-        from src.ml.predict import generate_forecast
-        models = st.session_state.models
-        feature_cols = st.session_state.feature_cols
-        ml_df = st.session_state.get("ml_df", df)
-        
-        # Use Random Forest if available
-        model_type = "random_forest" if "random_forest" in models else list(models.keys())[0]
-        model, info = models[model_type]
-        
-        forecast = generate_forecast(model, ml_df, feature_cols, periods=30, product_id=product_id)
-        if forecast["status"] == "success":
-            return forecast["total_predicted"]
+        from src.ml.demand_forecast import forecast_daily_demand
+
+        forecast = forecast_daily_demand(df, periods=30, product_id=product_id)
+        return forecast["total_predicted"]
     except Exception:
         pass
     return None

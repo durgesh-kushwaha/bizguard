@@ -120,6 +120,74 @@ class TestMLTraining:
         assert info["model_name"] == "Random Forest Regressor"
         assert "feature_importance" in info
 
+    def test_time_split_keeps_latest_rows_for_testing(self):
+        from src.ml.preprocessing import split_data
+
+        X = pd.DataFrame({"day": np.arange(10)})
+        y = pd.Series(np.arange(10))
+        X_train, X_test, y_train, y_test = split_data(X, y, test_size=0.2)
+
+        assert X_train["day"].max() < X_test["day"].min()
+        assert y_train.max() < y_test.min()
+
+    def test_time_split_keeps_same_day_rows_together(self):
+        from src.ml.preprocessing import split_data
+
+        X = pd.DataFrame({"value": range(6)})
+        y = pd.Series(range(6))
+        dates = pd.Series(pd.to_datetime([
+            "2025-01-01", "2025-01-01", "2025-01-02",
+            "2025-01-02", "2025-01-03", "2025-01-03",
+        ]))
+        X_train, X_test, _, _ = split_data(X, y, test_size=0.2, dates=dates)
+
+        assert X_train.index.tolist() == [0, 1, 2, 3]
+        assert X_test.index.tolist() == [4, 5]
+
+    def test_rolling_features_only_use_prior_target_values(self):
+        from src.data.feature_engineering import create_rolling_features
+
+        frame = pd.DataFrame({
+            "product_id": ["A"] * 4,
+            "date": pd.date_range("2025-01-01", periods=4),
+            "quantity": [1, 3, 5, 7],
+        })
+        result = create_rolling_features(frame, windows=[2])
+
+        assert pd.isna(result["quantity_rolling_mean_2"].iloc[0])
+        assert result["quantity_rolling_mean_2"].iloc[1:].tolist() == [1.0, 2.0, 4.0]
+
+
+class TestDailyDemandForecast:
+    def test_aggregates_rows_to_daily_totals_and_keeps_units_comparable(self):
+        from src.ml.demand_forecast import forecast_daily_demand
+        from src.data.loader import load_sample_data
+
+        frame, _ = load_sample_data()
+        result = forecast_daily_demand(frame, periods=14)
+
+        recent_daily_average = result["history"].tail(90).mean()
+        assert result["model_name"] in {"Random Forest", "Gradient Boosting", "Seasonal Naive"}
+        assert result["avg_daily_predicted"] > recent_daily_average * 0.5
+        assert result["avg_daily_predicted"] < recent_daily_average * 1.5
+        assert result["backtest_wape"] >= 0
+        assert result["baseline_wape"] >= 0
+        assert len(result["predictions"]) == 14
+
+    def test_product_forecast_uses_only_selected_product(self):
+        from src.ml.demand_forecast import daily_demand_series
+
+        dates = pd.date_range("2025-01-01", periods=40)
+        frame = pd.DataFrame({
+            "date": list(dates) + list(dates),
+            "product_id": ["A"] * 40 + ["B"] * 40,
+            "quantity": [2] * 40 + [20] * 40,
+        })
+
+        series = daily_demand_series(frame, "A")
+        assert series.sum() == 80
+        assert series.mean() == 2
+
 
 class TestMLEvaluation:
     """Tests for model evaluation."""

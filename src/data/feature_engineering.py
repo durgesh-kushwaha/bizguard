@@ -116,20 +116,16 @@ def create_rolling_features(df: pd.DataFrame, group_col: str = "product_id",
         std_col = f"{target_col}_rolling_std_{window}"
         
         if group_col in result.columns:
-            result[mean_col] = (
-                result.groupby(group_col)[target_col]
-                .transform(lambda x: x.rolling(window, min_periods=1).mean())
-                .round(2)
-            )
-            result[std_col] = (
-                result.groupby(group_col)[target_col]
-                .transform(lambda x: x.rolling(window, min_periods=1).std())
-                .fillna(0)
-                .round(2)
-            )
+            result[mean_col] = result.groupby(group_col)[target_col].transform(
+                lambda values: values.shift(1).rolling(window, min_periods=1).mean()
+            ).round(2)
+            result[std_col] = result.groupby(group_col)[target_col].transform(
+                lambda values: values.shift(1).rolling(window, min_periods=1).std()
+            ).fillna(0).round(2)
         else:
-            result[mean_col] = result[target_col].rolling(window, min_periods=1).mean().round(2)
-            result[std_col] = result[target_col].rolling(window, min_periods=1).std().fillna(0).round(2)
+            history = result[target_col].shift(1)
+            result[mean_col] = history.rolling(window, min_periods=1).mean().round(2)
+            result[std_col] = history.rolling(window, min_periods=1).std().fillna(0).round(2)
     
     return result
 

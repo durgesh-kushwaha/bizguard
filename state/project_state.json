@@ -27,7 +27,7 @@
     "Build decision contracts",
     "Build SQLite persistence",
     "Build Streamlit UI (7 pages)",
-    "Create 52 tests (all passing)",
+    "Create 57 tests (all passing)",
     "Create README and documentation",
     "Harden data upload state and validation",
     "Add BDA KPI and Spark pipeline tests",
@@ -40,7 +40,7 @@
   ],
   "blocked_tasks": [],
   "known_bugs": [],
-  "last_test": "52 passed (2026-10-02)",
+  "last_test": "57 passed (2026-10-02)",
   "last_commit": "fix: use Pandas for Streamlit Cloud deployment",
   "next_action": "None required; preserve the user's current layout",
   "last_updated": "2026-10-02"

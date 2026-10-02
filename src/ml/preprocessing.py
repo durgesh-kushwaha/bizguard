@@ -8,7 +8,6 @@ feature selection, encoding, and train/test splitting.
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from typing import Tuple, List, Dict, Optional
 from config.settings import ML_TEST_SIZE, ML_RANDOM_STATE
@@ -48,6 +47,8 @@ def prepare_features(df: pd.DataFrame, target_col: str = "quantity") -> Tuple[pd
         # Target-leaking columns (computed from quantity)
         "revenue", "gross_profit", "profit_margin", "net_revenue",
         "cost", "net_price",
+        # These ratios are calculated from the target quantity itself.
+        "marketing_per_unit", "return_rate", "inventory_to_sales",
         # String identifiers
         "product_name",
     }
@@ -80,18 +81,20 @@ def prepare_features(df: pd.DataFrame, target_col: str = "quantity") -> Tuple[pd
 
 def split_data(X: pd.DataFrame, y: pd.Series,
                test_size: float = None,
-               random_state: int = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+               random_state: int = None,
+               dates: Optional[pd.Series] = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
     Split data into training and testing sets.
     
-    Uses stratified splitting is not applicable for regression,
-    so uses random split with fixed seed for reproducibility.
+    Keeps the latest observations for testing so evaluation reflects
+    predictions on future data rather than a random mix of dates.
     
     Args:
         X: Feature DataFrame.
         y: Target Series.
         test_size: Fraction for test set (default from settings).
         random_state: Random seed (default from settings).
+        dates: Optional observation dates used to keep each date in one split.
     
     Returns:
         Tuple of (X_train, X_test, y_train, y_test).
@@ -101,9 +104,20 @@ def split_data(X: pd.DataFrame, y: pd.Series,
     if random_state is None:
         random_state = ML_RANDOM_STATE
     
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
-    )
+    if dates is not None:
+        ordered_dates = pd.to_datetime(dates.reindex(X.index), errors="coerce")
+        order = ordered_dates.sort_values(kind="stable").index
+        X, y, ordered_dates = X.loc[order], y.loc[order], ordered_dates.loc[order]
+        unique_dates = ordered_dates.dropna().drop_duplicates()
+        test_date_count = max(1, int(np.ceil(len(unique_dates) * test_size)))
+        first_test_date = unique_dates.iloc[-test_date_count]
+        test_mask = ordered_dates >= first_test_date
+        X_train, X_test = X.loc[~test_mask], X.loc[test_mask]
+        y_train, y_test = y.loc[~test_mask], y.loc[test_mask]
+    else:
+        split_at = int(len(X) * (1 - test_size))
+        X_train, X_test = X.iloc[:split_at], X.iloc[split_at:]
+        y_train, y_test = y.iloc[:split_at], y.iloc[split_at:]
     
     return X_train, X_test, y_train, y_test
 

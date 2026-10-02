@@ -26,7 +26,7 @@
 - ✅ ML preprocessing (feature selection, train/test split, scaling)
 - ✅ ML training (Linear Regression + Random Forest)
 - ✅ ML evaluation (MAE, RMSE, R², comparison, explanation)
-- ✅ ML prediction & forecasting (future feature construction, forecast generation)
+- ✅ ML prediction & forecasting with daily-unit aggregation and rolling-origin model selection
 - ✅ Decision simulators (pricing, inventory, marketing)
 - ✅ Scenario analysis (Conservative/Expected/Optimistic)
 - ✅ Decision contracts (full contract creation)
@@ -40,7 +40,7 @@
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 52 tests passing (data, BDA/Spark, ML, decisions, utils)
+- ✅ 57 tests passing (data, BDA/Spark, ML, decisions, utils)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
 - ✅ Streamlit Cloud uses Pandas without Java/PySpark install-time dependencies
@@ -61,7 +61,7 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 52 passed (2026-10-02)
+`python -m pytest tests/ -q` — 57 passed (2026-10-02)
 
 ## Last Git Commit
 `feat: harden data ingestion and BDA coverage`

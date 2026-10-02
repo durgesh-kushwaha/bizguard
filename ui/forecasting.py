@@ -16,7 +16,7 @@ from src.utils.formatting import format_number
 def render():
     """Render the Forecasting page."""
     st.title("🔮 Demand Forecast")
-    st.caption("Train ML models to predict future demand and visualize forecasts.")
+    st.caption("Train and validate demand models, then forecast daily unit totals.")
     
     if st.session_state.get("cleaned_df") is None:
         st.info("👈 Load and clean your data in the **Data Explorer** page first.")
@@ -44,11 +44,9 @@ def _render_training(df: pd.DataFrame):
     st.markdown("### Model Training Pipeline")
     
     st.markdown("""
-    The ML pipeline follows these steps:
-    1. **Feature Engineering** — Create temporal, lag, and business features
-    2. **Train/Test Split** — 80% training, 20% testing
-    3. **Model Training** — Linear Regression (baseline) + Random Forest
-    4. **Evaluation** — Compare models using MAE, RMSE, R²
+    Transaction-level models are evaluated on the latest 20% of dated records.
+    The forecast tab separately aggregates units by calendar day and selects a
+    model using rolling-origin backtests against a weekly seasonal baseline.
     """)
     
     if st.session_state.get("models") is not None:
@@ -84,7 +82,8 @@ def _run_training_pipeline(df: pd.DataFrame):
         
         # Step 3: Split data
         progress.progress(40, text="Step 3/5: Splitting train/test...")
-        X_train, X_test, y_train, y_test = split_data(X, y)
+        dates = ml_df.loc[X.index, "date"] if "date" in ml_df.columns else None
+        X_train, X_test, y_train, y_test = split_data(X, y, dates=dates)
         
         # Store for evaluation
         st.session_state.X_test = X_test
@@ -228,62 +227,40 @@ def _render_evaluation():
 def _render_forecast(df: pd.DataFrame):
     """Render demand forecast section."""
     st.markdown("### Demand Forecast")
-    
-    if st.session_state.get("models") is None:
-        st.info("👈 Train the models first in the **Train Models** tab.")
-        return
-    
-    models = st.session_state.models
-    feature_cols = st.session_state.feature_cols
-    ml_df = st.session_state.get("ml_df", df)
-    
+
+    st.caption("Forecasts use total units per calendar day, matching the historical chart.")
     # Forecast controls
-    col1, col2, col3 = st.columns(3)
-    
+    col1, col2 = st.columns(2)
+
     with col1:
-        # Model selection
-        model_options = {info["model_name"]: mt for mt, (m, info) in models.items()}
-        selected_model_name = st.selectbox("Select Model", list(model_options.keys()))
-        selected_model_type = model_options[selected_model_name]
-    
-    with col2:
-        # Product selection
         products = ["All Products"] + sorted(df["product_id"].unique().tolist()) if "product_id" in df.columns else ["All Products"]
         selected_product = st.selectbox("Product", products)
-    
-    with col3:
+    with col2:
         forecast_days = st.slider("Forecast Period (days)", 7, 90, 30)
-    
+
     if st.button("📈 Generate Forecast", type="primary"):
         with st.spinner("Generating forecast..."):
             try:
-                from src.ml.predict import generate_forecast
-                
-                model, info = models[selected_model_type]
+                from src.ml.demand_forecast import forecast_daily_demand
+
                 product_id = None if selected_product == "All Products" else selected_product
-                
-                forecast = generate_forecast(
-                    model, ml_df, feature_cols,
-                    periods=forecast_days,
-                    product_id=product_id,
-                    model_name=selected_model_name,
+                forecast = forecast_daily_demand(
+                    df, periods=forecast_days, product_id=product_id,
                 )
-                
-                if forecast["status"] == "success":
-                    st.session_state.current_forecast = forecast
-                    st.rerun()
-                else:
-                    st.error(f"Forecast failed: {forecast.get('error', 'Unknown error')}")
+                st.session_state.current_forecast = forecast
+                st.rerun()
+            except ValueError as e:
+                st.warning(str(e))
             except Exception as e:
-                st.error(f"Forecast generation failed: {e}")
-    
+                st.error(f"Forecast could not be generated: {e}")
+
     # Display forecast if available
     if st.session_state.get("current_forecast") is not None:
         forecast = st.session_state.current_forecast
-        
+
         st.markdown("---")
         st.markdown(f"#### Forecast Results — {forecast['model_name']}")
-        
+
         # KPI cards
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -295,31 +272,35 @@ def _render_forecast(df: pd.DataFrame):
         with col4:
             product_label = forecast.get("product_id", "All Products") or "All Products"
             st.metric("Product", product_label)
-        
+
+        if forecast["beats_baseline"]:
+            st.success(
+                f"Chronological backtest WAPE: {forecast['backtest_wape']:.1f}% "
+                f"versus {forecast['baseline_wape']:.1f}% for the seasonal-naive baseline."
+            )
+        else:
+            st.info(
+                f"The seasonal-naive baseline performed best in the chronological backtest "
+                f"(WAPE {forecast['baseline_wape']:.1f}%). The forecast uses that baseline; "
+                f"the trained models did not improve on it."
+            )
+
         # Forecast chart
         st.markdown("#### Historical + Forecast")
-        
-        # Get historical data
-        hist_df = st.session_state.cleaned_df.copy()
-        if forecast.get("product_id") and "product_id" in hist_df.columns:
-            hist_df = hist_df[hist_df["product_id"] == forecast["product_id"]]
-        
-        hist_daily = hist_df.groupby("date")["quantity"].sum().reset_index()
-        hist_daily = hist_daily.sort_values("date").tail(90)  # Last 90 days
-        
+        hist_daily = forecast["history"].tail(90)
         fig = go.Figure()
-        
+
         # Historical
         fig.add_trace(go.Scatter(
-            x=hist_daily["date"], y=hist_daily["quantity"],
+            x=hist_daily.index, y=hist_daily.values,
             mode="lines", name="Historical",
             line=dict(color="#2563eb", width=2),
         ))
-        
+
         # Forecast
         forecast_dates = forecast["dates"]
         forecast_values = forecast["predictions"]
-        
+
         fig.add_trace(go.Scatter(
             x=forecast_dates, y=forecast_values,
             mode="lines+markers", name="Forecast",
@@ -335,20 +316,15 @@ def _render_forecast(df: pd.DataFrame):
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
         )
         st.plotly_chart(fig, use_container_width=True)
-        
+
         # Model info
         with st.expander("ℹ️ Model Information"):
-            eval_data = st.session_state.get("model_evaluations", {})
-            if forecast["model_name"] in eval_data:
-                metrics = eval_data[forecast["model_name"]]
-                st.markdown(f"**MAE:** {metrics['mae']:.4f}")
-                st.markdown(f"**RMSE:** {metrics['rmse']:.4f}")
-                st.markdown(f"**R²:** {metrics['r2']:.4f}")
-            
+            st.markdown(f"**Backtest MAE:** {forecast['backtest_mae']:.2f} units per day")
+            st.markdown(f"**Backtest WAPE:** {forecast['backtest_wape']:.1f}%")
+            st.markdown(f"**Seasonal-naive WAPE:** {forecast['baseline_wape']:.1f}%")
+            st.markdown(f"**Validation:** three rolling-origin folds, {forecast['validation_days']} days each")
             st.markdown(f"**Model:** {forecast['model_name']}")
-            st.markdown(f"**Features used:** {len(feature_cols)}")
             st.info(
-                "This forecast uses historical patterns to predict future demand. "
-                "Actual results may differ due to market changes, competition, "
-                "or events not captured in the training data."
+                "Historical validation is not a guarantee of future accuracy. Unexpected promotions, "
+                "stockouts, price changes, and market shifts are not known to this model."
             )
