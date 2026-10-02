@@ -14,7 +14,7 @@ This is the core BDA component that shows distributed processing capability.
 import pandas as pd
 import logging
 from typing import Optional, Tuple
-from src.bda.spark_session import get_spark_session, is_spark_available
+from src.bda.spark_session import get_spark_error, get_spark_session, is_spark_available
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,8 @@ def pandas_to_spark(df: pd.DataFrame):
         spark_df = spark.createDataFrame(df_copy)
         logger.info(f"Created Spark DataFrame: {spark_df.count()} rows, {len(spark_df.columns)} columns")
         return spark_df
-    
     except Exception as e:
-        logger.error(f"Failed to create Spark DataFrame: {e}")
-        return None
+        raise RuntimeError(f"Could not convert the uploaded data to a Spark DataFrame: {e}") from e
 
 
 def spark_to_pandas(spark_df) -> pd.DataFrame:
@@ -149,7 +147,8 @@ def run_spark_pipeline(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
     if not is_spark_available():
         return df, {
             "engine": "Pandas (Spark not available)",
-            "status": "Completed (Pandas fallback)",
+            "status": "Fallback",
+            "error": get_spark_error() or "PySpark is not installed.",
             "input_rows": len(df),
             "output_rows": len(df),
             "spark_available": False,
@@ -162,6 +161,7 @@ def run_spark_pipeline(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
             return df, {
                 "engine": "Pandas (Spark conversion failed)",
                 "status": "Fallback",
+                "error": get_spark_error() or "Could not start the Spark session. Check Java 17+ and JAVA_HOME.",
                 "input_rows": len(df),
                 "output_rows": len(df),
                 "spark_available": False,
@@ -209,7 +209,7 @@ def run_spark_pipeline(df: pd.DataFrame) -> Tuple[pd.DataFrame, dict]:
         return result_df, metadata
     
     except Exception as e:
-        logger.error(f"Spark pipeline failed: {e}")
+        logger.exception("Spark pipeline failed")
         return df, {
             "engine": "Pandas (Spark pipeline failed)",
             "status": "Fallback",

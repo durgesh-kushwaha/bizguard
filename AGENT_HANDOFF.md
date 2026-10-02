@@ -10,7 +10,7 @@ No required project task remains. The app is available at `http://localhost:8517
 
 ## LAST COMPLETED TASK
 - Completed UI and data hardening, BDA test coverage, and documentation review
-- 50/50 tests passing, including file-format and local PySpark coverage
+- 52/52 tests passing, including file-format and local PySpark coverage
 - App responds at `http://localhost:8517`
 
 ## CURRENT FILES BEING MODIFIED
@@ -33,7 +33,8 @@ None — clean state.
 - Decision contracts with assumptions, risks, monitoring
 - SQLite decision persistence
 - Streamlit UI with 7 pages
-- 50 tests passing
+- 52 tests passing
+- Streamlit Community Cloud installs Java 17 from root `packages.txt`; fallback state shows a warning with its cause
 - Phone-width upload picker verified; supports CSV, TSV, XLS/XLSX, JSON/JSONL/NDJSON, and Parquet
 - Upload headers are normalized; ambiguous duplicate columns are rejected
 - Empty data and invalid numeric/business values receive validation errors
@@ -44,7 +45,7 @@ None — clean state.
 - PySpark requires Java to be installed (falls back to Pandas if unavailable)
 
 ## LAST SUCCESSFUL TEST
-`python -m pytest tests/ -q` — 50 passed (2026-10-02)
+`python -m pytest tests/ -q` — 52 passed (2026-10-02)
 
 ## CURRENT ERROR
 None.

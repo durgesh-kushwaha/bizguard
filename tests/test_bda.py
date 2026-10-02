@@ -62,3 +62,32 @@ def test_spark_pipeline_computes_business_columns():
         assert processed.loc[0, "gross_profit"] == 12.0
     finally:
         stop_spark_session()
+
+
+def test_spark_unavailable_reports_fallback_reason(monkeypatch):
+    from src.bda import spark_processing
+
+    monkeypatch.setattr(spark_processing, "is_spark_available", lambda: False)
+    monkeypatch.setattr(spark_processing, "get_spark_error", lambda: "Java was not found")
+    data = pd.DataFrame({"quantity": [1]})
+
+    unchanged, metadata = spark_processing.run_spark_pipeline(data)
+    assert unchanged.equals(data)
+    assert metadata["status"] == "Fallback"
+    assert metadata["error"] == "Java was not found"
+
+
+def test_spark_conversion_failure_is_reported(monkeypatch):
+    from src.bda import spark_processing
+
+    class BrokenSpark:
+        def createDataFrame(self, _):
+            raise ValueError("unsupported column type")
+
+    monkeypatch.setattr(spark_processing, "get_spark_session", lambda: BrokenSpark())
+    data = pd.DataFrame({"quantity": [1]})
+
+    unchanged, metadata = spark_processing.run_spark_pipeline(data)
+    assert unchanged.equals(data)
+    assert metadata["status"] == "Fallback"
+    assert "unsupported column type" in metadata["error"]

@@ -111,6 +111,8 @@ streamlit run app.py
 
 The application opens at `http://localhost:8501`.
 
+Streamlit Community Cloud installs the Java runtime declared in `packages.txt` so the PySpark demonstration can start there as well.
+
 ## 📖 How to Use
 
 ### 1. Load Data

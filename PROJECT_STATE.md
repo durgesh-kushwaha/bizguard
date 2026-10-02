@@ -40,9 +40,10 @@
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 50 tests passing (data, BDA/Spark, ML, decisions, utils)
+- ✅ 52 tests passing (data, BDA/Spark, ML, decisions, utils)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
+- ✅ Streamlit Cloud Java 17 runtime declared and Spark fallback errors surfaced
 - ✅ Upload validation and dataset-change state handling hardened
 - ✅ Current Streamlit layout smoke-checked with the sample dataset
 
@@ -59,7 +60,7 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 50 passed (2026-10-02)
+`python -m pytest tests/ -q` — 52 passed (2026-10-02)
 
 ## Last Git Commit
 `feat: harden data ingestion and BDA coverage`

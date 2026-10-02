@@ -9,6 +9,8 @@
 
 The uploader accepts CSV, TSV, Excel (`.xls`, `.xlsx`), JSON, JSON Lines (`.jsonl`, `.ndjson`), and Parquet business tables. It is available on desktop and mobile browsers. Image and document formats are not transaction tables and are not accepted.
 
+For Streamlit Community Cloud, the root-level `packages.txt` installs Java 17 for PySpark. A dependency change triggers a cloud rebuild; check the deployment logs if Spark still falls back.
+
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>

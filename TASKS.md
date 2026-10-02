@@ -65,9 +65,11 @@
 - [COMPLETED] Decision engine tests (11 tests passing)
 - [COMPLETED] ML tests (8 tests passing)
 - [COMPLETED] Utility tests (7 tests passing)
-- [COMPLETED] BDA KPI and Spark pipeline tests (3 tests passing)
+- [COMPLETED] BDA KPI and Spark pipeline tests (5 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (50 tests)
+- [COMPLETED] Full suite passes (52 tests)
+- [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
+- [COMPLETED] Declare Java 17 for Streamlit Community Cloud
 
 ## Phase 9 — Documentation & Demo
 - [COMPLETED] README

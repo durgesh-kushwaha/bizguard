@@ -263,7 +263,11 @@ def _render_spark_processing():
     else:
         metadata = st.session_state.spark_metadata
         
-        st.success(f"✅ Spark processing completed using **{metadata.get('engine', 'Unknown')}**.")
+        if metadata.get("spark_available") and metadata.get("status") == "Completed":
+            st.success(f"Spark processing completed using **{metadata.get('engine', 'Unknown')}**.")
+        else:
+            reason = metadata.get("error", "Check that Java 17+ and PySpark are installed.")
+            st.warning(f"PySpark did not run; the app kept your data and used the Pandas fallback. {reason}")
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -291,8 +295,3 @@ def _render_spark_processing():
                     "The prototype uses PySpark to demonstrate distributed-data-processing concepts. "
                     "The architecture is designed to scale to larger datasets."
                 )
-        elif not metadata.get("spark_available"):
-            st.warning(
-                "PySpark was not available. Data was processed using Pandas as a fallback. "
-                "Install PySpark (`pip install pyspark`) and ensure Java is available for full BDA demonstration."
-            )

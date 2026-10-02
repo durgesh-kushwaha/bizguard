@@ -6,16 +6,16 @@
 | Suite | Status | Pass | Fail | Skip |
 |-------|--------|------|------|------|
 | Data | ✅ PASSED | 21 | 0 | 0 |
-| BDA/Spark | ✅ PASSED | 3 | 0 | 0 |
+| BDA/Spark | ✅ PASSED | 5 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
 | ML | ✅ PASSED | 8 | 0 | 0 |
 | Utils/DB | ✅ PASSED | 7 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **50** | **0** | **0** |
+| **Total** | **✅ ALL PASS** | **52** | **0** | **0** |
 
 ## Last Test Run
 ```
 python -m pytest tests/ -q
-50 passed in 12.08s
+52 passed
 Date: 2026-10-02
 ```
 
@@ -71,6 +71,7 @@ Date: 2026-10-02
 - ✅ Empty-data KPI handling
 - ✅ Order-based average order value and profit margin
 - ✅ PySpark cleaning and derived revenue/profit (PySpark 4.2.0, Java 17)
+- ✅ Spark unavailable and Spark conversion fallback explanations
 
 ## Test Commands
 ```bash

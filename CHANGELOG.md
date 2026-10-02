@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-02 — Streamlit Cloud Spark Runtime
+- **fix:** Install Java 17 in Streamlit Community Cloud for PySpark startup
+- **fix:** Show a warning and the recorded failure reason when Spark falls back to Pandas
+- **fix:** Detect Java from `PATH` when `JAVA_HOME` is unset and lower Spark driver memory to 1 GB
+- **test:** Cover unavailable Spark and DataFrame conversion failures
+
 ### 2026-10-02 — Mobile and Tabular Upload Formats
 - **feat:** Accept CSV, TSV, XLS/XLSX, JSON, JSON Lines, and Parquet business data files
 - **fix:** Read legacy `.xls` workbooks with the correct engine
