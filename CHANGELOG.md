@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### 2026-10-02 — Stable Cloud Dependencies
+- **fix:** Remove PySpark and Java from the Streamlit Cloud install so the app starts on the working Pandas path
+- **docs:** Keep PySpark available as an optional local dependency via `requirements-spark.txt`
+
 ### 2026-10-02 — Streamlit Cloud Spark Runtime
 - **fix:** Install Java 17 in Streamlit Community Cloud for PySpark startup
 - **fix:** Show a warning and the recorded failure reason when Spark falls back to Pandas

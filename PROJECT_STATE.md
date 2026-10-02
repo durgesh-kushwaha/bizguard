@@ -43,7 +43,8 @@
 - ✅ 52 tests passing (data, BDA/Spark, ML, decisions, utils)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
-- ✅ Streamlit Cloud Java 17 runtime declared and Spark fallback errors surfaced
+- ✅ Streamlit Cloud uses Pandas without Java/PySpark install-time dependencies
+- ✅ PySpark remains available as an optional local demonstration dependency
 - ✅ Upload validation and dataset-change state handling hardened
 - ✅ Current Streamlit layout smoke-checked with the sample dataset
 

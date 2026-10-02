@@ -34,7 +34,7 @@ None — clean state.
 - SQLite decision persistence
 - Streamlit UI with 7 pages
 - 52 tests passing
-- Streamlit Community Cloud installs Java 17 from root `packages.txt`; fallback state shows a warning with its cause
+- Streamlit Community Cloud uses Pandas by default; install `requirements-spark.txt` and Java 17 only for local Spark demonstrations
 - Phone-width upload picker verified; supports CSV, TSV, XLS/XLSX, JSON/JSONL/NDJSON, and Parquet
 - Upload headers are normalized; ambiguous duplicate columns are rejected
 - Empty data and invalid numeric/business values receive validation errors

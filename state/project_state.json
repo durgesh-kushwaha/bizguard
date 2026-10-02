@@ -33,7 +33,7 @@
     "Add BDA KPI and Spark pipeline tests",
     "Complete UI and documentation review",
     "Add desktop and mobile support for common tabular upload formats",
-    "Configure Java 17 for Streamlit Community Cloud and report Spark fallbacks accurately"
+    "Keep the Streamlit Cloud build on Pandas and make PySpark optional for local use"
   ],
   "pending_tasks": [
     "Optional screenshots for presentation materials"
@@ -41,7 +41,7 @@
   "blocked_tasks": [],
   "known_bugs": [],
   "last_test": "52 passed (2026-10-02)",
-  "last_commit": "fix: configure Spark runtime on Streamlit Cloud",
+  "last_commit": "fix: use Pandas for Streamlit Cloud deployment",
   "next_action": "None required; preserve the user's current layout",
   "last_updated": "2026-10-02"
 }

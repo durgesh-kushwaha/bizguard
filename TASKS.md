@@ -69,7 +69,7 @@
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
 - [COMPLETED] Full suite passes (52 tests)
 - [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
-- [COMPLETED] Declare Java 17 for Streamlit Community Cloud
+- [COMPLETED] Keep Streamlit Community Cloud on the Pandas path; make Spark optional for local use
 
 ## Phase 9 — Documentation & Demo
 - [COMPLETED] README

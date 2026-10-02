@@ -58,7 +58,7 @@ BizGuard answers four critical business questions:
 | Language | Python 3.10+ |
 | UI Framework | Streamlit |
 | Data Processing | Pandas, NumPy |
-| Big Data | PySpark 4.x (Java 17+) |
+| Big Data | Pandas by default; optional PySpark 4.x (Java 17+) for local demonstrations |
 | Machine Learning | scikit-learn |
 | Visualization | Plotly |
 | Database | SQLite |
@@ -89,7 +89,6 @@ bizguard/
 
 ### Prerequisites
 - Python 3.10 or higher
-- Java 17 or newer (required for PySpark 4.x)
 
 ### Installation
 
@@ -111,7 +110,7 @@ streamlit run app.py
 
 The application opens at `http://localhost:8501`.
 
-Streamlit Community Cloud installs the Java runtime declared in `packages.txt` so the PySpark demonstration can start there as well.
+The app uses Pandas by default, so Streamlit Community Cloud does not need Java or PySpark. To enable the optional Spark demonstration locally, install `requirements-spark.txt` and Java 17 or newer.
 
 ## 📖 How to Use
 
