@@ -1,6 +1,6 @@
 # TEST STATUS — BizGuard
 
-**Last Updated:** 2026-10-02
+**Last Updated:** 2026-10-03
 
 ## Summary
 | Suite | Status | Pass | Fail | Skip |
@@ -8,15 +8,15 @@
 | Data | ✅ PASSED | 21 | 0 | 0 |
 | BDA/Spark | ✅ PASSED | 5 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
-| ML | ✅ PASSED | 13 | 0 | 0 |
+| ML | ✅ PASSED | 14 | 0 | 0 |
 | Utils/DB | ✅ PASSED | 7 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **57** | **0** | **0** |
+| **Total** | **✅ ALL PASS** | **58** | **0** | **0** |
 
 ## Last Test Run
 ```
 python -m pytest tests/ -q
-57 passed
-Date: 2026-10-02
+58 passed
+Date: 2026-10-03
 ```
 
 ## Test Details

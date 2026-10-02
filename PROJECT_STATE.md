@@ -8,7 +8,7 @@
 
 **Completion:** 100% (optional screenshots deferred)
 
-**Last Updated:** 2026-10-02
+**Last Updated:** 2026-10-03
 
 ## Working Features
 - ✅ Project structure initialized
@@ -24,7 +24,7 @@
 - ✅ Business aggregations (monthly, product, category, regional, marketing)
 - ✅ Business analytics & KPIs (compute_kpis, detect_business_signals)
 - ✅ ML preprocessing (feature selection, train/test split, scaling)
-- ✅ ML training (Linear Regression + Random Forest)
+- ✅ ML training (Linear Regression baseline, Random Forest, Extra Trees, Histogram Gradient Boosting)
 - ✅ ML evaluation (MAE, RMSE, R², comparison, explanation)
 - ✅ ML prediction & forecasting with daily-unit aggregation and rolling-origin model selection
 - ✅ Decision simulators (pricing, inventory, marketing)
@@ -40,7 +40,7 @@
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 57 tests passing (data, BDA/Spark, ML, decisions, utils)
+- ✅ 58 tests passing (data, BDA/Spark, ML, decisions, utils)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
 - ✅ Streamlit Cloud uses Pandas without Java/PySpark install-time dependencies
@@ -61,15 +61,15 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 57 passed (2026-10-02)
+`python -m pytest tests/ -q` — 58 passed (2026-10-03)
 
 ## Last Git Commit
-`feat: harden data ingestion and BDA coverage`
+`fix: version and retrain demand forecasting`
 
 ## Important Decisions
 - Python + Streamlit stack (no React/Angular)
 - PySpark for BDA with Pandas fallback
-- scikit-learn for ML (Linear Regression + Random Forest)
+- scikit-learn for ML (Linear Regression baseline and tree ensembles)
 - SQLite for decision persistence
 - Synthetic dataset (13,077 rows) for demonstration
 - Target variable: quantity (demand prediction)

@@ -2,9 +2,11 @@
 
 ## [Unreleased]
 
-### 2026-10-02 — Daily Forecast Accuracy
+### 2026-10-03 — Daily Forecast Accuracy
 - **fix:** Forecast daily totals rather than per-transaction quantities so forecast and history share units
 - **feat:** Select Random Forest, Gradient Boosting, or weekly seasonal-naive forecasts using rolling-origin WAPE
+- **feat:** Compare Extra Trees and Histogram Gradient Boosting alongside existing transaction-model candidates
+- **fix:** Invalidate saved forecasts and trained models from older session revisions
 - **fix:** Use chronological holdouts, date-grouped boundaries, shifted rolling features, and remove target-derived predictors
 - **test:** Add forecast-scale, product-scope, and time-split regression coverage
 

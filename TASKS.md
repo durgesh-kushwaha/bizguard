@@ -38,6 +38,7 @@
 - [COMPLETED] Feature engineering for ML
 - [COMPLETED] Train Linear Regression baseline
 - [COMPLETED] Train Random Forest Regressor
+- [COMPLETED] Add Extra Trees and Histogram Gradient Boosting candidates
 - [COMPLETED] Model evaluation and comparison
 - [COMPLETED] Build forecasting page
 
@@ -63,11 +64,11 @@
 ## Phase 8 — Testing & Hardening
 - [COMPLETED] Data tests (21 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
-- [COMPLETED] ML tests (13 tests passing)
+- [COMPLETED] ML tests (14 tests passing)
 - [COMPLETED] Utility tests (7 tests passing)
 - [COMPLETED] BDA KPI and Spark pipeline tests (5 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (57 tests)
+- [COMPLETED] Full suite passes (58 tests)
 - [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
 - [COMPLETED] Keep Streamlit Community Cloud on the Pandas path; make Spark optional for local use
 

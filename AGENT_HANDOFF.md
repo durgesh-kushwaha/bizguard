@@ -1,6 +1,6 @@
 # AGENT HANDOFF — BizGuard
 
-**Last Updated:** 2026-10-02
+**Last Updated:** 2026-10-03
 
 ## CURRENT PHASE
 Phases 0-9 are complete. Optional screenshots are deferred.
@@ -10,7 +10,7 @@ No required project task remains. The app is available at `http://localhost:8517
 
 ## LAST COMPLETED TASK
 - Completed UI and data hardening, BDA test coverage, and documentation review
-- 57/57 tests passing, including file-format and daily forecast backtest coverage
+- 58/58 tests passing, including file-format and daily forecast backtest coverage
 - App responds at `http://localhost:8517`
 
 ## CURRENT FILES BEING MODIFIED
@@ -25,7 +25,7 @@ None — clean state.
 - PySpark processing pipeline with Pandas fallback
 - Business aggregations (monthly, product, category, regional, marketing)
 - KPI computation and business signal detection
-- ML training (Linear Regression + Random Forest)
+- ML training (Linear Regression baseline, Random Forest, Extra Trees, Histogram Gradient Boosting)
 - ML evaluation (MAE, RMSE, R²)
 - Demand forecasting
 - Decision simulation (pricing, inventory, marketing)
@@ -33,7 +33,7 @@ None — clean state.
 - Decision contracts with assumptions, risks, monitoring
 - SQLite decision persistence
 - Streamlit UI with 7 pages
-- 57 tests passing
+- 58 tests passing
 - Streamlit Community Cloud uses Pandas by default; install `requirements-spark.txt` and Java 17 only for local Spark demonstrations
 - Phone-width upload picker verified; supports CSV, TSV, XLS/XLSX, JSON/JSONL/NDJSON, and Parquet
 - Upload headers are normalized; ambiguous duplicate columns are rejected
@@ -45,7 +45,7 @@ None — clean state.
 - PySpark requires Java to be installed (falls back to Pandas if unavailable)
 
 ## LAST SUCCESSFUL TEST
-`python -m pytest tests/ -q` — 57 passed (2026-10-02)
+`python -m pytest tests/ -q` — 58 passed (2026-10-03)
 
 ## CURRENT ERROR
 None.
@@ -59,7 +59,7 @@ None.
 ## IMPORTANT DECISIONS
 - Using Streamlit (not React) for UI
 - Using PySpark for BDA demonstration (Pandas fallback)
-- Using scikit-learn (Linear Regression + Random Forest) for ML
+- Using scikit-learn (Linear Regression baseline and tree ensembles) for ML
 - Using SQLite for decision persistence
 - Synthetic dataset (13,077 rows) for demo purposes
 - Target variable: quantity (sales/demand prediction)

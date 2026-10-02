@@ -33,7 +33,7 @@ BizGuard answers four critical business questions:
 
 ### 🧠 Machine Learning
 - Demand/sales prediction
-- Linear Regression (baseline) + Random Forest
+- Linear Regression baseline, Random Forest, Extra Trees, and Histogram Gradient Boosting
 - Model comparison with MAE, RMSE, R²
 - Feature importance visualization
 - Future demand forecasting
@@ -163,7 +163,7 @@ See [`docs/bda_mapping.md`](docs/bda_mapping.md) for detailed mapping.
 - Feature engineering (temporal, lag, rolling features)
 - Supervised learning (regression)
 - Train/test split and model validation
-- Model comparison (Linear Regression vs Random Forest)
+- Chronological model comparison (Linear Regression baseline and tree ensembles)
 - Evaluation metrics (MAE, RMSE, R²)
 - Feature importance analysis
 

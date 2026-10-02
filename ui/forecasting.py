@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 from src.utils.formatting import format_number
 
+ML_PIPELINE_REVISION = 3
+
 
 def render():
     """Render the Forecasting page."""
@@ -23,6 +25,15 @@ def render():
         return
     
     df = st.session_state.cleaned_df
+
+    if st.session_state.get("ml_pipeline_revision") != ML_PIPELINE_REVISION:
+        for key in (
+            "models", "model_evaluations", "X_test", "y_test",
+            "preprocessing_summary", "feature_cols", "ml_df", "current_forecast",
+        ):
+            st.session_state[key] = None
+        st.session_state.ml_pipeline_revision = ML_PIPELINE_REVISION
+        st.info("Forecasting was updated. Previous models and saved forecasts were cleared.")
     
     # ML Pipeline tabs
     tab_train, tab_evaluate, tab_forecast = st.tabs([
@@ -41,7 +52,7 @@ def render():
 
 def _render_training(df: pd.DataFrame):
     """Render model training section."""
-    st.markdown("### Model Training Pipeline")
+    st.markdown("### Transaction Model Training")
     
     st.markdown("""
     Transaction-level models are evaluated on the latest 20% of dated records.
@@ -93,7 +104,7 @@ def _run_training_pipeline(df: pd.DataFrame):
         )
         
         # Step 4: Train models
-        progress.progress(60, text="Step 4/5: Training Linear Regression...")
+        progress.progress(60, text="Step 4/5: Training baseline and ensemble models...")
         from src.ml.train import train_all_models
         models = train_all_models(X_train, y_train)
         st.session_state.models = models
@@ -228,7 +239,7 @@ def _render_forecast(df: pd.DataFrame):
     """Render demand forecast section."""
     st.markdown("### Demand Forecast")
 
-    st.caption("Forecasts use total units per calendar day, matching the historical chart.")
+    st.caption("Daily-demand engine v3 · Models are checked against chronological holdouts and a weekly baseline.")
     # Forecast controls
     col1, col2 = st.columns(2)
 
@@ -257,9 +268,13 @@ def _render_forecast(df: pd.DataFrame):
     # Display forecast if available
     if st.session_state.get("current_forecast") is not None:
         forecast = st.session_state.current_forecast
+        if forecast.get("forecast_version") != 3:
+            st.session_state.current_forecast = None
+            st.info("This saved forecast used the previous model. Generate a new forecast to refresh it.")
+            return
 
         st.markdown("---")
-        st.markdown(f"#### Forecast Results — {forecast['model_name']}")
+        st.markdown(f"#### Forecast Results — {forecast['model_name']} · Daily units")
 
         # KPI cards
         col1, col2, col3, col4 = st.columns(4)

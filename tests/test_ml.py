@@ -120,6 +120,17 @@ class TestMLTraining:
         assert info["model_name"] == "Random Forest Regressor"
         assert "feature_importance" in info
 
+    def test_train_all_models_includes_nonlinear_candidates(self):
+        from src.ml.train import train_all_models
+
+        X = pd.DataFrame({"signal": np.linspace(0, 1, 80), "noise": np.random.RandomState(4).rand(80)})
+        y = pd.Series(10 * X["signal"] + np.sin(X["signal"] * 8))
+
+        models = train_all_models(X, y)
+        assert set(models) == {
+            "linear_regression", "random_forest", "extra_trees", "hist_gradient_boosting"
+        }
+
     def test_time_split_keeps_latest_rows_for_testing(self):
         from src.ml.preprocessing import split_data
 
@@ -172,6 +183,7 @@ class TestDailyDemandForecast:
         assert result["avg_daily_predicted"] < recent_daily_average * 1.5
         assert result["backtest_wape"] >= 0
         assert result["baseline_wape"] >= 0
+        assert result["forecast_version"] == 3
         assert len(result["predictions"]) == 14
 
     def test_product_forecast_uses_only_selected_product(self):

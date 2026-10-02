@@ -8,7 +8,7 @@ The training tab predicts quantity on a transaction row. The forecast tab has a 
 
 The transaction pipeline includes calendar, product/business, and historical quantity features. Rolling averages and deviations are shifted so the current target is never part of its own feature. Quantity-derived ratios are excluded from predictors.
 
-The latest 20% of observations are held out in date order. Linear Regression and Random Forest are compared on that future slice using MAE, RMSE, and R². This is a single chronological holdout, not a claim of performance across every future period.
+The latest 20% of observations are held out in date order, with all transactions from a date kept together. Linear Regression is a baseline; Random Forest, Extra Trees, and Histogram Gradient Boosting are compared on the same future slice using MAE, RMSE, and R². This is a single chronological holdout, not a claim of performance across every future period.
 
 ## Daily Demand Forecast
 
