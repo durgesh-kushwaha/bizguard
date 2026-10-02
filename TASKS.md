@@ -54,17 +54,18 @@
 - [COMPLETED] Build decision history page
 
 ## Phase 7 — UI Polish
-- [NOT_STARTED] Visual consistency pass
-- [NOT_STARTED] Error states and empty states review
-- [NOT_STARTED] Usability improvements
+- [COMPLETED] Preserve and smoke-check the current Streamlit layout
+- [COMPLETED] Add clear upload validation feedback and safe fallback messages
+- [COMPLETED] Keep cleaned data and analysis results tied to the selected dataset
 
 ## Phase 8 — Testing & Hardening
-- [COMPLETED] Data tests (10 tests passing)
+- [COMPLETED] Data tests (15 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
 - [COMPLETED] ML tests (8 tests passing)
 - [COMPLETED] Utility tests (7 tests passing)
-- [NOT_STARTED] BDA/Spark-specific tests
-- [NOT_STARTED] Edge case handling review
+- [COMPLETED] BDA KPI and Spark pipeline tests (3 tests passing)
+- [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
+- [COMPLETED] Full suite passes (44 tests)
 
 ## Phase 9 — Documentation & Demo
 - [COMPLETED] README
@@ -76,7 +77,7 @@
 - [COMPLETED] Demo flow (docs/demo_flow.md)
 - [COMPLETED] Future scope (docs/future_scope.md)
 - [COMPLETED] Project overview (docs/project_overview.md)
-- [NOT_STARTED] Screenshots
+- [DEFERRED] Screenshots (optional presentation material)
 
 ## Deferred / Future
 - [DEFERRED] Shopify/Amazon integration

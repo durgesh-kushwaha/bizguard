@@ -42,7 +42,7 @@ def main():
     }
     
     /* Sidebar styling */
-    .css-1d391kg { padding-top: 1rem; }
+    [data-testid="stSidebarContent"] { padding-top: 1rem; }
     
     /* Section headers */
     .section-header {

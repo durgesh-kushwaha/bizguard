@@ -31,7 +31,7 @@ BizGuard allows a business user to:
 
 ## Technology Stack
 
-- Python 3.9+
+- Python 3.10+
 - Streamlit (UI)
 - Pandas/NumPy (Data processing)
 - PySpark (Big Data processing)

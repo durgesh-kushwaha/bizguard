@@ -55,10 +55,10 @@ BizGuard answers four critical business questions:
 
 | Component | Technology |
 |-----------|------------|
-| Language | Python 3.9+ |
+| Language | Python 3.10+ |
 | UI Framework | Streamlit |
 | Data Processing | Pandas, NumPy |
-| Big Data | PySpark |
+| Big Data | PySpark 4.x (Java 17+) |
 | Machine Learning | scikit-learn |
 | Visualization | Plotly |
 | Database | SQLite |
@@ -88,8 +88,8 @@ bizguard/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.9 or higher
-- Java 8 or 11 (required for PySpark)
+- Python 3.10 or higher
+- Java 17 or newer (required for PySpark 4.x)
 
 ### Installation
 

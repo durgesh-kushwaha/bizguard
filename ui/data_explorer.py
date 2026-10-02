@@ -10,10 +10,14 @@ Allows users to:
 
 import streamlit as st
 import pandas as pd
+import logging
 from src.data.loader import load_file, load_sample_data
 from src.data.validator import validate_dataset
 from src.data.cleaner import clean_dataset
 from src.utils.formatting import format_number, severity_emoji
+from ui.session_state import clear_analysis_results
+
+logger = logging.getLogger(__name__)
 
 
 def render():
@@ -59,19 +63,28 @@ def _render_upload_section():
     )
     
     if uploaded_file is not None:
+        signature = (
+            uploaded_file.name,
+            uploaded_file.size,
+            getattr(uploaded_file, "file_id", None),
+        )
+        if signature == st.session_state.get("uploaded_file_signature"):
+            return
+
         try:
             with st.spinner("Loading data..."):
                 df, metadata = load_file(uploaded_file)
+                clear_analysis_results(st.session_state)
                 st.session_state.df = df
                 st.session_state.loading_metadata = metadata
-                st.session_state.cleaned_df = None  # Reset cleaned data
-                st.session_state.models = None  # Reset models
+                st.session_state.uploaded_file_signature = signature
             
             st.success(f"✅ Loaded {metadata['rows_loaded']:,} rows and {metadata['columns_loaded']} columns.")
         except ValueError as e:
             st.error(f"❌ Failed to load file: {e}")
         except Exception as e:
-            st.error(f"❌ Unexpected error: {e}")
+            logger.exception("Could not load uploaded business data")
+            st.error("The file could not be loaded. Check that it is a valid CSV or Excel workbook.")
 
 
 def _render_sample_section():
@@ -88,15 +101,16 @@ def _render_sample_section():
         try:
             with st.spinner("Generating and loading sample data..."):
                 df, metadata = load_sample_data()
+                clear_analysis_results(st.session_state)
                 st.session_state.df = df
                 st.session_state.loading_metadata = metadata
-                st.session_state.cleaned_df = None
-                st.session_state.models = None
+                st.session_state.uploaded_file_signature = None
             
             st.success(f"✅ Sample data loaded: {metadata['rows_loaded']:,} rows.")
             st.rerun()
         except Exception as e:
-            st.error(f"❌ Failed to load sample data: {e}")
+            logger.exception("Could not load the sample dataset")
+            st.error("The sample dataset could not be loaded. Check that the sample CSV is present and readable.")
 
 
 def _render_data_info():
@@ -166,7 +180,15 @@ def _render_cleaning_section():
     if st.session_state.get("cleaned_df") is None:
         if st.button("🔄 Clean & Preprocess Data", type="primary"):
             with st.spinner("Cleaning data..."):
-                cleaned_df, report = clean_dataset(df)
+                validation = validate_dataset(df)
+                if not validation["is_valid"]:
+                    st.error("Fix the validation errors above before cleaning this dataset.")
+                    return
+                try:
+                    cleaned_df, report = clean_dataset(df)
+                except (ValueError, TypeError) as e:
+                    st.error(f"This dataset could not be cleaned: {e}")
+                    return
                 st.session_state.cleaned_df = cleaned_df
                 st.session_state.cleaning_report = report
             st.rerun()

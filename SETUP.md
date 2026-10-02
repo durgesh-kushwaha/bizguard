@@ -1,8 +1,8 @@
 # SETUP — BizGuard
 
 ## Prerequisites
-- Python 3.9 or higher
-- Java 8 or 11 (required for PySpark)
+- Python 3.10 or higher
+- Java 17 or newer (required for PySpark 4.x)
 - pip (Python package manager)
 
 ## Installation
@@ -33,10 +33,7 @@ pip install -r requirements.txt
 ```bash
 java -version
 ```
-PySpark requires Java 8 or 11. If not installed:
-- **macOS:** `brew install openjdk@11`
-- **Ubuntu:** `sudo apt install openjdk-11-jdk`
-- **Windows:** Download from adoptium.net
+PySpark 4.x requires Java 17 or newer. Install a supported JDK if needed, then set `JAVA_HOME` to its installation directory.
 
 ### 5. Run the Application
 ```bash
@@ -48,9 +45,9 @@ The application will open in your browser at `http://localhost:8501`.
 ## Troubleshooting
 
 ### PySpark not finding Java
-Set JAVA_HOME environment variable:
+Set `JAVA_HOME` to the installed JDK:
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home)  # macOS
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)  # macOS
 ```
 
 ### Port 8501 already in use

@@ -5,16 +5,17 @@
 ## Summary
 | Suite | Status | Pass | Fail | Skip |
 |-------|--------|------|------|------|
-| Data | ✅ PASSED | 10 | 0 | 0 |
+| Data | ✅ PASSED | 15 | 0 | 0 |
+| BDA/Spark | ✅ PASSED | 3 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
 | ML | ✅ PASSED | 8 | 0 | 0 |
 | Utils/DB | ✅ PASSED | 7 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **36** | **0** | **0** |
+| **Total** | **✅ ALL PASS** | **44** | **0** | **0** |
 
 ## Last Test Run
 ```
-python -m pytest tests/ -v
-36 passed in 19.44s
+python -m pytest tests/ -q
+44 passed in 11.68s
 Date: 2026-10-02
 ```
 
@@ -63,6 +64,11 @@ Date: 2026-10-02
 - ✅ TestDatabase::test_init_database
 - ✅ TestDatabase::test_save_and_retrieve_decision
 - ✅ TestDatabase::test_delete_decision
+
+### BDA Tests (test_bda.py)
+- ✅ Empty-data KPI handling
+- ✅ Order-based average order value and profit margin
+- ✅ PySpark cleaning and derived revenue/profit (PySpark 4.2.0, Java 17)
 
 ## Test Commands
 ```bash

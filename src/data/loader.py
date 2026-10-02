@@ -9,6 +9,17 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Trim column names and make their casing consistent."""
+    result = df.copy()
+    result.columns = [str(column).strip().lower() for column in result.columns]
+    duplicates = result.columns[result.columns.duplicated()].tolist()
+    if duplicates:
+        names = ", ".join(sorted(set(duplicates)))
+        raise ValueError(f"Column names are duplicated after trimming and lowercasing: {names}.")
+    return result
+
+
 def load_csv(file_path) -> Tuple[pd.DataFrame, dict]:
     """
     Load a CSV file and return the DataFrame with loading metadata.
@@ -23,8 +34,10 @@ def load_csv(file_path) -> Tuple[pd.DataFrame, dict]:
         ValueError: If the file cannot be read as CSV.
     """
     try:
-        df = pd.read_csv(file_path, parse_dates=["date"] if isinstance(file_path, (str, Path)) else False)
+        df = pd.read_csv(file_path)
         
+        df = _normalize_columns(df)
+
         # Try to parse date column if it exists
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"], errors="coerce")
@@ -58,6 +71,7 @@ def load_excel(file_path) -> Tuple[pd.DataFrame, dict]:
     """
     try:
         df = pd.read_excel(file_path, engine="openpyxl")
+        df = _normalize_columns(df)
         
         # Try to parse date column if it exists
         if "date" in df.columns:

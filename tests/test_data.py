@@ -14,18 +14,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def _create_sample_df():
     """Create a minimal valid DataFrame for testing."""
+    quantity = np.random.randint(1, 20, 100)
+    returns = np.minimum(np.random.randint(0, 3, 100), quantity)
     return pd.DataFrame({
         "date": pd.date_range("2024-01-01", periods=100, freq="D"),
         "order_id": [f"ORD{i:04d}" for i in range(100)],
         "product_id": ["P001"] * 50 + ["P002"] * 50,
         "product_name": ["Widget A"] * 50 + ["Widget B"] * 50,
         "category": ["Electronics"] * 50 + ["Office"] * 50,
-        "quantity": np.random.randint(1, 20, 100),
+        "quantity": quantity,
         "unit_price": np.random.uniform(100, 1000, 100).round(2),
         "discount": np.random.choice([0, 5, 10, 15], 100),
         "cost_per_unit": np.random.uniform(50, 500, 100).round(2),
         "marketing_spend": np.random.uniform(0, 500, 100).round(2),
-        "returns": np.random.randint(0, 3, 100),
+        "returns": returns,
         "customer_id": [f"C{i:04d}" for i in np.random.randint(1, 50, 100)],
         "region": np.random.choice(["North", "South", "East", "West"], 100),
         "inventory_units": np.random.randint(10, 200, 100),
@@ -64,6 +66,24 @@ class TestDataLoader:
         
         with pytest.raises(ValueError):
             load_csv("/nonexistent/path.csv")
+
+    def test_load_normalizes_column_names(self, tmp_path):
+        from src.data.loader import load_csv
+
+        csv_path = tmp_path / "mixed_case.csv"
+        csv_path.write_text(" Date ,ORDER_ID\n2024-01-01,ORD1\n")
+
+        loaded, _ = load_csv(csv_path)
+        assert list(loaded.columns) == ["date", "order_id"]
+
+    def test_load_rejects_duplicate_normalized_columns(self, tmp_path):
+        from src.data.loader import load_csv
+
+        csv_path = tmp_path / "duplicate_columns.csv"
+        csv_path.write_text("date, Date \n2024-01-01,2024-01-02\n")
+
+        with pytest.raises(ValueError, match="duplicated"):
+            load_csv(csv_path)
 
 
 class TestDataValidator:
@@ -113,6 +133,34 @@ class TestDataValidator:
         result = validate_dataset(df)
         dup_issues = [i for i in result["warnings"] if "duplicate" in i["problem"].lower()]
         assert len(dup_issues) > 0
+
+    def test_validate_empty_dataset(self):
+        from src.data.validator import validate_dataset
+
+        result = validate_dataset(pd.DataFrame(columns=["date"]))
+        assert not result["is_valid"]
+        assert any("no rows" in issue["problem"].lower() for issue in result["errors"])
+
+    def test_validate_impossible_discount_and_returns(self):
+        from src.data.validator import validate_dataset
+
+        df = _create_sample_df()
+        df.loc[0, "discount"] = 125
+        df.loc[1, "returns"] = df.loc[1, "quantity"] + 1
+
+        result = validate_dataset(df)
+        problems = [issue["problem"] for issue in result["errors"]]
+        assert any("outside 0" in problem for problem in problems)
+        assert any("Returns exceed quantity" in problem for problem in problems)
+
+    def test_validate_infinite_numeric_value(self):
+        from src.data.validator import validate_dataset
+
+        df = _create_sample_df()
+        df.loc[0, "unit_price"] = np.inf
+
+        result = validate_dataset(df)
+        assert any("infinite" in issue["problem"].lower() for issue in result["errors"])
 
 
 class TestDataCleaner:

@@ -3,15 +3,15 @@
 **Last Updated:** 2026-10-02
 
 ## CURRENT PHASE
-All Phases 0-6 completed. Ready for Phase 7 (UI Polish) and Phase 8 (Hardening).
+Phases 0-9 are complete. Optional screenshots are deferred.
 
 ## CURRENT TASK
-Project foundation complete. All core features are implemented and tested.
+No required project task remains. The app is available at `http://localhost:8517`.
 
 ## LAST COMPLETED TASK
-- Initial build of entire application (Phases 0-6)
-- 36/36 tests passing
-- App launches successfully via `streamlit run app.py`
+- Completed UI and data hardening, BDA test coverage, and documentation review
+- 44/44 tests passing, including the local PySpark pipeline
+- App responds at `http://localhost:8517`
 
 ## CURRENT FILES BEING MODIFIED
 None — clean state.
@@ -32,25 +32,23 @@ None — clean state.
 - Decision contracts with assumptions, risks, monitoring
 - SQLite decision persistence
 - Streamlit UI with 7 pages
-- 36 tests passing
+- 44 tests passing
+- Upload headers are normalized; ambiguous duplicate columns are rejected
+- Empty data and invalid numeric/business values receive validation errors
+- Replacing a dataset clears dependent cleaning, Spark, forecast, and model results
 
 ## WHAT DOES NOT WORK
 - Nothing known to be broken
 - PySpark requires Java to be installed (falls back to Pandas if unavailable)
 
 ## LAST SUCCESSFUL TEST
-`python -m pytest tests/ -v` — 36 passed in 19.44s (2026-10-02)
+`python -m pytest tests/ -q` — 44 passed (2026-10-02)
 
 ## CURRENT ERROR
 None.
 
 ## NEXT EXACT ACTION
-1. Run the app and do a manual walkthrough of all pages
-2. Fix any UI edge cases or visual issues found
-3. Add BDA-specific tests (Spark operations) if Spark+Java available
-4. Review error handling for edge cases (empty data, wrong formats)
-5. Polish UI spacing and consistency
-6. Final documentation review
+No required action. Capture screenshots of the main workflows if presentation materials are needed.
 
 ## BLOCKERS
 None.
@@ -63,6 +61,7 @@ None.
 - Synthetic dataset (13,077 rows) for demo purposes
 - Target variable: quantity (sales/demand prediction)
 - Sample data has 16 products, 4 categories, 4 regions, 21 months
+- The existing layout is the user's preferred baseline; preserve it in follow-up work
 
 ## DO NOT REPEAT
 - Do not add React, Angular, or complex frontend frameworks

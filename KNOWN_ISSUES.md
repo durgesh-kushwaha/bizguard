@@ -12,5 +12,6 @@ None.
 None.
 
 ## Notes
-- Project is in initial setup phase
-- No issues reported yet
+- The sample data is synthetic and intentionally small; Spark demonstrates the processing flow, not production-scale throughput.
+- The PySpark test skips when a working local Spark and Java runtime is unavailable.
+- Presentation screenshots have not been added to the repository.

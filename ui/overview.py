@@ -155,14 +155,17 @@ def _load_sample_data():
     try:
         from src.data.loader import load_sample_data
         from src.data.cleaner import clean_dataset
+        from ui.session_state import clear_analysis_results
         
         df, metadata = load_sample_data()
+        clear_analysis_results(st.session_state)
         st.session_state.df = df
         
         cleaned_df, cleaning_report = clean_dataset(df)
         st.session_state.cleaned_df = cleaned_df
         st.session_state.loading_metadata = metadata
         st.session_state.cleaning_report = cleaning_report
+        st.session_state.uploaded_file_signature = None
         
     except Exception as e:
         st.error(f"Failed to load sample data: {e}")

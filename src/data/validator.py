@@ -51,12 +51,21 @@ def validate_data_types(df: pd.DataFrame) -> List[Dict]:
     for col in NUMERIC_COLUMNS:
         if col in df.columns:
             if not pd.api.types.is_numeric_dtype(df[col]):
-                non_numeric_count = pd.to_numeric(df[col], errors="coerce").isna().sum() - df[col].isna().sum()
+                converted = pd.to_numeric(df[col], errors="coerce")
+                non_numeric_count = int((converted.isna() & df[col].notna()).sum())
                 issues.append({
                     "problem": f"Column '{col}' contains non-numeric values ({non_numeric_count} rows).",
                     "why_it_matters": f"'{col}' must be numeric for calculations like revenue, profit, and ML predictions.",
                     "expected": f"Numeric values (integers or decimals) in column '{col}'.",
                     "suggested_fix": f"Check for text entries, special characters, or currency symbols in '{col}' and remove them.",
+                    "severity": "error",
+                })
+            elif not np.isfinite(df[col].dropna()).all():
+                issues.append({
+                    "problem": f"Column '{col}' contains infinite values.",
+                    "why_it_matters": f"Infinite '{col}' values cannot be used reliably in analytics or model training.",
+                    "expected": f"Finite numeric values in column '{col}'.",
+                    "suggested_fix": f"Replace infinite values in '{col}' with valid numbers or remove those records.",
                     "severity": "error",
                 })
     
@@ -86,6 +95,15 @@ def validate_data_quality(df: pd.DataFrame) -> List[Dict]:
     """
     issues = []
     
+    if df.empty:
+        return [{
+            "problem": "The dataset has no rows.",
+            "why_it_matters": "Analytics, cleaning, and model training need at least one business record.",
+            "expected": "A CSV or Excel sheet with a header row and business records.",
+            "suggested_fix": "Upload a non-empty dataset or load the sample data.",
+            "severity": "error",
+        }]
+
     # Check for missing values
     missing = df.isnull().sum()
     cols_with_missing = missing[missing > 0]
@@ -125,6 +143,30 @@ def validate_data_quality(df: pd.DataFrame) -> List[Dict]:
                     "suggested_fix": f"Review and correct negative values in '{col}'. They may be data entry errors.",
                     "severity": "error",
                 })
+
+    if "discount" in df.columns and pd.api.types.is_numeric_dtype(df["discount"]):
+        invalid_discount = ((df["discount"] < 0) | (df["discount"] > 100)).sum()
+        if invalid_discount:
+            issues.append({
+                "problem": f"Column 'discount' has {invalid_discount} values outside 0–100.",
+                "why_it_matters": "Discounts are percentages and values outside this range create invalid prices.",
+                "expected": "A percentage from 0 to 100 in each row.",
+                "suggested_fix": "Check whether discounts use a different scale and convert them to percentages.",
+                "severity": "error",
+            })
+
+    if {"returns", "quantity"}.issubset(df.columns) and all(
+        pd.api.types.is_numeric_dtype(df[col]) for col in ("returns", "quantity")
+    ):
+        excessive_returns = (df["returns"] > df["quantity"]).sum()
+        if excessive_returns:
+            issues.append({
+                "problem": f"Returns exceed quantity in {excessive_returns} rows.",
+                "why_it_matters": "A transaction cannot return more units than it sold.",
+                "expected": "Returns between 0 and the sold quantity for each row.",
+                "suggested_fix": "Review the affected transaction records and correct the return counts.",
+                "severity": "error",
+            })
     
     # Check for zero prices
     if "unit_price" in df.columns and pd.api.types.is_numeric_dtype(df["unit_price"]):

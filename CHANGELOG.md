@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### 2026-10-02 — UI Polish and Hardening
+- **fix:** Normalize uploaded column names and reject duplicate normalized headers
+- **fix:** Validate empty datasets, infinite numeric values, discount bounds, and return counts
+- **fix:** Clear stale analysis results when the source dataset changes
+- **fix:** Avoid reloading an unchanged Streamlit upload during page interactions
+- **test:** Add BDA KPI and PySpark pipeline coverage; full suite passes (44 tests)
+- **docs:** Update setup and project status to reflect the verified build
+
 ### 2026-10-02 — Initial Build
 - **feat:** Initialized project repository structure
 - **feat:** Created configuration and settings module
