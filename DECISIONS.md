@@ -47,3 +47,11 @@
 - **Chosen Option:** Synthetic generation with embedded patterns
 - **Reason:** Can control seasonality, trends, and correlations needed for demo
 - **Trade-offs:** Not real business data — documented as synthetic
+
+## Decision 7: Decision History Storage
+- **Decision:** Keep SQLite as the app's local decision-history store
+- **Context:** The save workflow bug was caused by Streamlit reruns clearing the simulator result, not by SQLite failing to commit records.
+- **Options Considered:** Retain SQLite, introduce a hosted database
+- **Chosen Option:** Retain SQLite and make the save flow survive reruns and verify writes by reading them back
+- **Reason:** This fixes the confirmed workflow defect without adding credentials or infrastructure the project does not have.
+- **Trade-offs:** Streamlit Community Cloud does not guarantee local-file persistence across restarts or redeployments. Durable cloud history requires a separately configured remote database.

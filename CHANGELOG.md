@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### 2026-10-03 — Decision History Workflow
+- **fix:** Keep successful pricing, inventory, and marketing simulations available after Streamlit reruns so the save form can submit
+- **fix:** Verify saved decisions by reading them back; report storage failures separately from an empty history
+- **feat:** Persist historical evidence and display expected-versus-actual metric comparisons
+- **fix:** Validate update/delete targets and report missing records instead of silently succeeding
+- **test:** Cover the full simulation, save, retrieve, update, compare, and delete workflow using a temporary SQLite database
+- **docs:** Clarify that Streamlit Community Cloud does not guarantee local SQLite persistence across restarts or redeployments
+
 ### 2026-10-03 — Daily Forecast Accuracy
 - **fix:** Forecast daily totals rather than per-transaction quantities so forecast and history share units
 - **feat:** Select Random Forest, Gradient Boosting, or weekly seasonal-naive forecasts using rolling-origin WAPE

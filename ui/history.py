@@ -6,8 +6,12 @@ Displays saved decisions and allows comparison with actual outcomes.
 
 import streamlit as st
 import pandas as pd
+import logging
 from src.storage.database import get_all_decisions, delete_decision, update_actual_outcome
+from src.decisions.decision_engine import compare_expected_actual
 from src.utils.formatting import format_currency
+
+logger = logging.getLogger(__name__)
 
 
 def render():
@@ -15,7 +19,15 @@ def render():
     st.title("📋 Decision History")
     st.caption("Review past decisions, compare expected vs actual outcomes, and learn from results.")
     
-    decisions = get_all_decisions()
+    try:
+        decisions = get_all_decisions()
+    except Exception:
+        logger.exception("Could not load decision history")
+        st.error(
+            "Decision history could not be loaded because the storage system failed. "
+            "Your saved decisions have not been changed."
+        )
+        return
     
     if not decisions:
         st.info(
@@ -23,6 +35,11 @@ def render():
             "and save your first business decision."
         )
         return
+
+    st.caption(
+        "History is stored in SQLite. Streamlit Community Cloud does not guarantee "
+        "that local files survive an app restart or redeployment."
+    )
     
     st.markdown(f"**{len(decisions)} decision(s) recorded.**")
     
@@ -111,6 +128,8 @@ def _render_decision_detail(decision: dict):
                 st.markdown(f"**{label}:** {value}")
     else:
         st.info("No expected outcome data.")
+
+    _render_outcome_comparison(decision)
     
     # Recommendation
     recommendation = decision.get("recommendation", {})
@@ -161,12 +180,26 @@ def _render_decision_detail(decision: dict):
     
     actual_result = st.text_input(
         "Actual outcome description",
-        value="",
+        value=(decision.get("actual_outcome") or {}).get("description", ""),
         key=f"actual_{decision['decision_id']}",
     )
+    numeric_metrics = [
+        key for key, value in expected.items()
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ]
+    metric_options = numeric_metrics or ["Description only"]
+    metric_options = metric_options + ["Description only"] if numeric_metrics else metric_options
+    stored_metric = (decision.get("actual_outcome") or {}).get("metric")
+    metric_index = metric_options.index(stored_metric) if stored_metric in metric_options else 0
+    actual_metric = st.selectbox(
+        "Metric being recorded",
+        metric_options,
+        index=metric_index,
+        key=f"actual_metric_{decision['decision_id']}",
+    )
     actual_value = st.number_input(
-        "Actual value (₹ or units)",
-        value=0.0,
+        "Actual value",
+        value=float((decision.get("actual_outcome") or {}).get("value", 0.0)),
         key=f"actual_val_{decision['decision_id']}",
     )
     
@@ -174,19 +207,60 @@ def _render_decision_detail(decision: dict):
     
     with col_save:
         if st.button("💾 Save Actual Outcome", key=f"save_{decision['decision_id']}"):
-            if actual_result or actual_value > 0:
-                actual_outcome = {
-                    "description": actual_result,
-                    "value": actual_value,
-                }
-                update_actual_outcome(decision["decision_id"], actual_outcome)
-                st.success("Actual outcome saved!")
-                st.rerun()
-            else:
+            if not actual_result and actual_metric == "Description only":
                 st.warning("Please enter the actual outcome.")
+            else:
+                try:
+                    actual_outcome = {
+                        "description": actual_result,
+                        "metric": None if actual_metric == "Description only" else actual_metric,
+                        "value": float(actual_value),
+                    }
+                    update_actual_outcome(decision["decision_id"], actual_outcome)
+                    st.success("Actual outcome saved.")
+                    st.rerun()
+                except Exception:
+                    logger.exception("Could not update decision %s", decision["decision_id"])
+                    st.error("Could not update the decision because storage is unavailable.")
     
     with col_delete:
         if st.button("🗑️ Delete Decision", key=f"del_{decision['decision_id']}", type="secondary"):
-            delete_decision(decision["decision_id"])
-            st.success("Decision deleted.")
-            st.rerun()
+            try:
+                delete_decision(decision["decision_id"])
+                st.success("Decision deleted.")
+                st.rerun()
+            except Exception:
+                logger.exception("Could not delete decision %s", decision["decision_id"])
+                st.error("Could not delete the decision because storage is unavailable.")
+
+
+def _render_outcome_comparison(decision: dict):
+    """Show an apples-to-apples comparison when an actual metric is recorded."""
+    actual = decision.get("actual_outcome")
+    if not actual:
+        return
+
+    comparison = compare_expected_actual(decision.get("expected_outcome", {}), actual)
+    if comparison is None:
+        if actual.get("description"):
+            st.info(f"Recorded outcome: {actual['description']}")
+        return
+
+    st.markdown("#### Expected vs Actual")
+    expected_label = comparison["metric"].replace("_", " ").title()
+    expected_value = comparison["expected"]
+    actual_value = comparison["actual"]
+    difference = comparison["difference"]
+    percentage = comparison["difference_pct"]
+    delta = f"{difference:+,.2f}"
+    if percentage is not None:
+        delta += f" ({percentage:+.1f}%)"
+
+    col_expected, col_actual = st.columns(2)
+    with col_expected:
+        st.metric(f"Expected {expected_label}", f"{expected_value:,.2f}")
+    with col_actual:
+        st.metric(f"Actual {expected_label}", f"{actual_value:,.2f}", delta=delta)
+
+    if actual.get("description"):
+        st.caption(actual["description"])

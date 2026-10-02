@@ -42,6 +42,37 @@ class TestFormatting:
 
 class TestDatabase:
     """Tests for database operations."""
+
+    def test_init_database_adds_history_evidence_to_legacy_schema(self, tmp_path):
+        import sqlite3
+        from src.storage.database import init_database
+
+        db_path = tmp_path / "legacy.db"
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("""
+                CREATE TABLE decisions (
+                    id TEXT PRIMARY KEY,
+                    date TEXT,
+                    decision_type TEXT,
+                    input_json TEXT,
+                    expected_outcome_json TEXT,
+                    scenario_results_json TEXT,
+                    assumptions_json TEXT,
+                    risks_json TEXT,
+                    monitoring_json TEXT,
+                    recommendation_json TEXT,
+                    user_notes TEXT,
+                    actual_outcome_json TEXT,
+                    status TEXT DEFAULT 'Simulated',
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+        init_database(db_path)
+        with sqlite3.connect(db_path) as conn:
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
+
+        assert "historical_evidence_json" in columns
     
     def test_init_database(self, tmp_path):
         from src.storage.database import init_database
@@ -94,3 +125,64 @@ class TestDatabase:
         
         delete_decision("DEL001", db_path)
         assert len(get_all_decisions(db_path)) == 0
+
+    def test_full_decision_contract_history_workflow(self, tmp_path):
+        import numpy as np
+        import pandas as pd
+        from src.decisions.decision_engine import compare_expected_actual, run_decision
+        from src.storage.database import (
+            delete_decision,
+            get_all_decisions,
+            get_decision_by_id,
+            init_database,
+            save_decision,
+            update_actual_outcome,
+        )
+
+        db_path = tmp_path / "workflow.db"
+        init_database(db_path)
+        history = pd.DataFrame({
+            "date": pd.date_range("2025-01-01", periods=20, freq="D"),
+            "product_id": ["P001"] * 20,
+            "product_name": ["Widget"] * 20,
+            "quantity": np.arange(5, 25),
+            "unit_price": [100.0] * 20,
+            "cost_per_unit": [40.0] * 20,
+            "revenue": np.arange(5, 25) * 100.0,
+        })
+
+        contract = run_decision(
+            history,
+            "Pricing",
+            {"product_id": "P001", "current_price": 100.0, "proposed_price": 110.0},
+            user_notes="Review after the next sales cycle.",
+        )
+        assert contract["scenario_results"]["Expected"]["projected_revenue"] > 0
+        decision_id = save_decision(contract, db_path)
+        assert len(decision_id) == 8
+
+        saved = get_decision_by_id(decision_id, db_path)
+        assert saved is not None
+        assert saved["decision_type"] == "Pricing"
+        assert saved["input"]["product"] == "Widget"
+        assert saved["scenario_results"] == contract["scenario_results"]
+        assert saved["historical_evidence"] == contract["historical_evidence"]
+        assert saved["user_notes"] == "Review after the next sales cycle."
+
+        expected = saved["expected_outcome"]["projected_revenue"]
+        actual = {
+            "description": "Revenue recorded for the test period.",
+            "metric": "projected_revenue",
+            "value": expected * 0.9,
+        }
+        update_actual_outcome(decision_id, actual, db_path)
+        updated = get_decision_by_id(decision_id, db_path)
+        assert updated["status"] == "Completed"
+        assert updated["actual_outcome"] == actual
+        comparison = compare_expected_actual(updated["expected_outcome"], updated["actual_outcome"])
+        assert comparison["difference"] == pytest.approx(actual["value"] - expected)
+        assert comparison["difference_pct"] == pytest.approx(-10.0)
+
+        delete_decision(decision_id, db_path)
+        assert get_decision_by_id(decision_id, db_path) is None
+        assert get_all_decisions(db_path) == []

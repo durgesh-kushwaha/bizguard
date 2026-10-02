@@ -51,8 +51,10 @@
 
 ## Phase 6 — Decision History
 - [COMPLETED] Build SQLite persistence layer
-- [COMPLETED] Build decision save functionality
-- [COMPLETED] Build decision history page
+- [COMPLETED] Preserve simulator results across Streamlit reruns so save actions complete
+- [COMPLETED] Verify saved contracts by reading them back from SQLite
+- [COMPLETED] Build decision history page with actual-outcome comparison and delete
+- [COMPLETED] Exercise simulation, save, retrieve, update, compare, and delete against a temporary database
 
 ## Phase 7 — UI Polish
 - [COMPLETED] Preserve and smoke-check the current Streamlit layout
@@ -65,10 +67,10 @@
 - [COMPLETED] Data tests (21 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
 - [COMPLETED] ML tests (14 tests passing)
-- [COMPLETED] Utility tests (7 tests passing)
+- [COMPLETED] Utility and database tests (9 tests passing)
 - [COMPLETED] BDA KPI and Spark pipeline tests (5 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (58 tests)
+- [COMPLETED] Full suite passes (60 tests)
 - [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
 - [COMPLETED] Keep Streamlit Community Cloud on the Pandas path; make Spark optional for local use
 

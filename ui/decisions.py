@@ -9,7 +9,10 @@ import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import logging
 from src.utils.formatting import format_currency, format_number, format_percentage, format_change_pct
+
+logger = logging.getLogger(__name__)
 
 
 def render():
@@ -29,6 +32,15 @@ def render():
         ["💰 Pricing", "📦 Inventory", "📢 Marketing"],
         horizontal=True,
     )
+
+    selected_type = {
+        "💰 Pricing": "Pricing",
+        "📦 Inventory": "Inventory",
+        "📢 Marketing": "Marketing",
+    }[decision_type]
+    pending = st.session_state.get("pending_decision")
+    if pending and pending["decision_type"] != selected_type:
+        st.session_state.pending_decision = None
     
     st.markdown("---")
     
@@ -38,6 +50,21 @@ def render():
         _render_inventory_simulator(df)
     elif decision_type == "📢 Marketing":
         _render_marketing_simulator(df)
+
+    pending = st.session_state.get("pending_decision")
+    if pending and pending["decision_type"] == selected_type:
+        _display_decision_result(pending["result"], pending["decision_type"])
+
+
+def _remember_simulation(result: dict, decision_type: str):
+    """Keep the latest successful simulation visible across Streamlit reruns."""
+    if "error" in result:
+        st.error(result["error"])
+        return
+    st.session_state.pending_decision = {
+        "decision_type": decision_type,
+        "result": result,
+    }
 
 
 def _render_pricing_simulator(df: pd.DataFrame):
@@ -90,10 +117,7 @@ def _render_pricing_simulator(df: pd.DataFrame):
             
             result = simulate_pricing(df, product_id, current_price, proposed_price, forecast_demand)
             
-            if "error" in result:
-                st.error(result["error"])
-            else:
-                _display_decision_result(result, "Pricing")
+            _remember_simulation(result, "Pricing")
 
 
 def _render_inventory_simulator(df: pd.DataFrame):
@@ -144,10 +168,7 @@ def _render_inventory_simulator(df: pd.DataFrame):
             
             result = simulate_inventory(df, product_id, current_inventory, proposed_purchase, forecast_demand)
             
-            if "error" in result:
-                st.error(result["error"])
-            else:
-                _display_decision_result(result, "Inventory")
+            _remember_simulation(result, "Inventory")
 
 
 def _render_marketing_simulator(df: pd.DataFrame):
@@ -194,10 +215,7 @@ def _render_marketing_simulator(df: pd.DataFrame):
             
             result = simulate_marketing(df, current_spend, proposed_spend, category)
             
-            if "error" in result:
-                st.error(result["error"])
-            else:
-                _display_decision_result(result, "Marketing")
+            _remember_simulation(result, "Marketing")
 
 
 def _get_forecast_demand(df, product_id):
@@ -346,12 +364,16 @@ def _render_save_decision(result: dict, decision_type: str):
     if st.button("💾 Save Decision Contract", type="primary"):
         try:
             from src.decisions.decision_engine import create_decision_contract
-            from src.storage.database import save_decision
+            from src.storage.database import get_decision_by_id, save_decision
             
             contract = create_decision_contract(decision_type, result, user_notes)
-            save_decision(contract)
-            
-            st.success(f"✅ Decision saved! ID: **{contract['decision_id']}**")
+            decision_id = save_decision(contract)
+            if get_decision_by_id(decision_id) is None:
+                raise RuntimeError("The saved decision could not be read back from storage.")
+
+            st.session_state.pending_decision = None
+            st.success(f"Decision saved and verified. ID: **{decision_id}**")
             st.balloons()
         except Exception as e:
-            st.error(f"Failed to save decision: {e}")
+            logger.exception("Could not save a decision contract")
+            st.error("Could not save the decision. The storage system may be unavailable; please try again.")

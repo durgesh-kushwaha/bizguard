@@ -1,6 +1,6 @@
 # KNOWN ISSUES — BizGuard
 
-**Last Updated:** 2026-10-02
+**Last Updated:** 2026-10-03
 
 ## Critical
 None.
@@ -9,7 +9,7 @@ None.
 None.
 
 ## Minor
-None.
+- Streamlit Community Cloud does not guarantee local-file persistence across app restarts or redeployments. Decision History works with the configured SQLite database, but durable cloud history needs a separately configured remote database.
 
 ## Notes
 - The sample data is synthetic and intentionally small; Spark demonstrates the processing flow, not production-scale throughput.

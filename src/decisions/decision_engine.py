@@ -17,6 +17,35 @@ from src.decisions.marketing import simulate_marketing
 from src.decisions.scenarios import get_scenario_recommendation
 
 
+def compare_expected_actual(expected: Dict, actual: Dict) -> Optional[Dict]:
+    """Compare one recorded numeric outcome with its matching expectation."""
+    metric = actual.get("metric")
+    if not metric or metric not in expected:
+        return None
+
+    expected_value = expected[metric]
+    actual_value = actual.get("value")
+    if (
+        isinstance(expected_value, bool)
+        or isinstance(actual_value, bool)
+        or not isinstance(expected_value, (int, float))
+        or not isinstance(actual_value, (int, float))
+    ):
+        return None
+
+    difference = actual_value - expected_value
+    return {
+        "metric": metric,
+        "expected": float(expected_value),
+        "actual": float(actual_value),
+        "difference": float(difference),
+        "difference_pct": (
+            float(difference / abs(expected_value) * 100)
+            if expected_value != 0 else None
+        ),
+    }
+
+
 def create_decision_contract(decision_type: str, simulation_result: Dict,
                              user_notes: str = "") -> Dict:
     """

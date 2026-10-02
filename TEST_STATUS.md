@@ -9,13 +9,13 @@
 | BDA/Spark | ✅ PASSED | 5 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
 | ML | ✅ PASSED | 14 | 0 | 0 |
-| Utils/DB | ✅ PASSED | 7 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **58** | **0** | **0** |
+| Utils/DB | ✅ PASSED | 9 | 0 | 0 |
+| **Total** | **✅ ALL PASS** | **60** | **0** | **0** |
 
 ## Last Test Run
 ```
 python -m pytest tests/ -q
-58 passed
+60 passed
 Date: 2026-10-03
 ```
 
@@ -66,6 +66,8 @@ Date: 2026-10-03
 - ✅ TestDatabase::test_init_database
 - ✅ TestDatabase::test_save_and_retrieve_decision
 - ✅ TestDatabase::test_delete_decision
+- ✅ TestDatabase::test_full_decision_contract_history_workflow (temporary SQLite database)
+- ✅ TestDatabase::test_init_database_adds_history_evidence_to_legacy_schema
 
 ### BDA Tests (test_bda.py)
 - ✅ Empty-data KPI handling

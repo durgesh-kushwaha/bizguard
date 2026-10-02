@@ -1,8 +1,8 @@
 """
 SQLite database module for BizGuard decision persistence.
 
-Stores and retrieves decision contracts so they survive app restarts.
-Uses SQLite for simplicity — no external database needed.
+Stores and retrieves decision contracts in the configured local SQLite file.
+On Streamlit Community Cloud, local-file persistence across restarts is not guaranteed.
 """
 
 import sqlite3
@@ -11,11 +11,12 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from datetime import datetime
 import logging
+from config.settings import DATABASE_PATH
 
 logger = logging.getLogger(__name__)
 
 # Default database path
-DB_PATH = Path(__file__).parent.parent.parent / "database" / "bizguard.db"
+DB_PATH = DATABASE_PATH
 
 
 def _get_connection(db_path: Path = None) -> sqlite3.Connection:
@@ -50,12 +51,18 @@ def init_database(db_path: Path = None):
                 risks_json TEXT,
                 monitoring_json TEXT,
                 recommendation_json TEXT,
+                historical_evidence_json TEXT,
                 user_notes TEXT,
                 actual_outcome_json TEXT,
                 status TEXT DEFAULT 'Simulated',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(decisions)")
+        }
+        if "historical_evidence_json" not in columns:
+            conn.execute("ALTER TABLE decisions ADD COLUMN historical_evidence_json TEXT")
         conn.commit()
         logger.info("Database initialized successfully.")
     finally:
@@ -78,13 +85,15 @@ def save_decision(contract: Dict, db_path: Path = None) -> str:
     
     try:
         decision_id = contract.get("decision_id", "")
+        if not decision_id:
+            raise ValueError("A decision contract must have a decision_id before it can be saved.")
         conn.execute("""
             INSERT OR REPLACE INTO decisions 
-            (id, date, decision_type, input_json, expected_outcome_json,
+             (id, date, decision_type, input_json, expected_outcome_json,
              scenario_results_json, assumptions_json, risks_json,
-             monitoring_json, recommendation_json, user_notes,
+             monitoring_json, recommendation_json, historical_evidence_json, user_notes,
              actual_outcome_json, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             decision_id,
             contract.get("date", datetime.now().isoformat()),
@@ -96,6 +105,7 @@ def save_decision(contract: Dict, db_path: Path = None) -> str:
             json.dumps(contract.get("risk_indicators", [])),
             json.dumps(contract.get("monitoring_triggers", [])),
             json.dumps(contract.get("recommendation", {})),
+            json.dumps(contract.get("historical_evidence", {})),
             contract.get("user_notes", ""),
             json.dumps(contract.get("actual_outcome")),
             contract.get("status", "Simulated"),
@@ -105,6 +115,26 @@ def save_decision(contract: Dict, db_path: Path = None) -> str:
         return decision_id
     finally:
         conn.close()
+
+
+def _row_to_decision(row: sqlite3.Row) -> Dict:
+    """Decode a stored row into the public decision-contract shape."""
+    return {
+        "decision_id": row["id"],
+        "date": row["date"],
+        "decision_type": row["decision_type"],
+        "input": json.loads(row["input_json"] or "{}"),
+        "expected_outcome": json.loads(row["expected_outcome_json"] or "{}"),
+        "scenario_results": json.loads(row["scenario_results_json"] or "{}"),
+        "key_assumptions": json.loads(row["assumptions_json"] or "[]"),
+        "risk_indicators": json.loads(row["risks_json"] or "[]"),
+        "monitoring_triggers": json.loads(row["monitoring_json"] or "[]"),
+        "recommendation": json.loads(row["recommendation_json"] or "{}"),
+        "historical_evidence": json.loads(row["historical_evidence_json"] or "{}"),
+        "user_notes": row["user_notes"],
+        "actual_outcome": json.loads(row["actual_outcome_json"] or "null"),
+        "status": row["status"],
+    }
 
 
 def get_all_decisions(db_path: Path = None) -> List[Dict]:
@@ -119,30 +149,10 @@ def get_all_decisions(db_path: Path = None) -> List[Dict]:
     
     try:
         cursor = conn.execute(
-            "SELECT * FROM decisions ORDER BY created_at DESC"
+            "SELECT * FROM decisions ORDER BY created_at DESC, rowid DESC"
         )
         rows = cursor.fetchall()
-        
-        decisions = []
-        for row in rows:
-            decision = {
-                "decision_id": row["id"],
-                "date": row["date"],
-                "decision_type": row["decision_type"],
-                "input": json.loads(row["input_json"] or "{}"),
-                "expected_outcome": json.loads(row["expected_outcome_json"] or "{}"),
-                "scenario_results": json.loads(row["scenario_results_json"] or "{}"),
-                "key_assumptions": json.loads(row["assumptions_json"] or "[]"),
-                "risk_indicators": json.loads(row["risks_json"] or "[]"),
-                "monitoring_triggers": json.loads(row["monitoring_json"] or "[]"),
-                "recommendation": json.loads(row["recommendation_json"] or "{}"),
-                "user_notes": row["user_notes"],
-                "actual_outcome": json.loads(row["actual_outcome_json"] or "null"),
-                "status": row["status"],
-            }
-            decisions.append(decision)
-        
-        return decisions
+        return [_row_to_decision(row) for row in rows]
     finally:
         conn.close()
 
@@ -157,11 +167,17 @@ def get_decision_by_id(decision_id: str, db_path: Path = None) -> Optional[Dict]
     Returns:
         Decision dict, or None if not found.
     """
-    decisions = get_all_decisions(db_path)
-    for d in decisions:
-        if d["decision_id"] == decision_id:
-            return d
-    return None
+    init_database(db_path)
+    conn = _get_connection(db_path)
+    try:
+        row = conn.execute(
+            "SELECT * FROM decisions WHERE id = ?", (decision_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return _row_to_decision(row)
+    finally:
+        conn.close()
 
 
 def update_actual_outcome(decision_id: str, actual_outcome: Dict,
@@ -177,11 +193,13 @@ def update_actual_outcome(decision_id: str, actual_outcome: Dict,
     conn = _get_connection(db_path)
     
     try:
-        conn.execute("""
+        cursor = conn.execute("""
             UPDATE decisions 
             SET actual_outcome_json = ?, status = 'Completed'
             WHERE id = ?
         """, (json.dumps(actual_outcome), decision_id))
+        if cursor.rowcount == 0:
+            raise ValueError(f"Decision {decision_id} was not found.")
         conn.commit()
         logger.info(f"Actual outcome updated for decision: {decision_id}")
     finally:
@@ -194,7 +212,9 @@ def delete_decision(decision_id: str, db_path: Path = None):
     conn = _get_connection(db_path)
     
     try:
-        conn.execute("DELETE FROM decisions WHERE id = ?", (decision_id,))
+        cursor = conn.execute("DELETE FROM decisions WHERE id = ?", (decision_id,))
+        if cursor.rowcount == 0:
+            raise ValueError(f"Decision {decision_id} was not found.")
         conn.commit()
         logger.info(f"Decision deleted: {decision_id}")
     finally:

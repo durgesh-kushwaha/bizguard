@@ -9,8 +9,9 @@ Phases 0-9 are complete. Optional screenshots are deferred.
 No required project task remains. The app is available at `http://localhost:8517`.
 
 ## LAST COMPLETED TASK
-- Completed UI and data hardening, BDA test coverage, and documentation review
-- 58/58 tests passing, including file-format and daily forecast backtest coverage
+- Fixed Decision Simulator results disappearing on save-triggered Streamlit reruns
+- Verified save/read-back, actual outcome update, metric comparison, and delete using a temporary SQLite database
+- 60/60 tests passing, including file-format, forecast, decision-history workflow, and database migration coverage
 - App responds at `http://localhost:8517`
 
 ## CURRENT FILES BEING MODIFIED
@@ -31,9 +32,9 @@ None — clean state.
 - Decision simulation (pricing, inventory, marketing)
 - Multi-scenario analysis (Conservative/Expected/Optimistic)
 - Decision contracts with assumptions, risks, monitoring
-- SQLite decision persistence
+- SQLite decision persistence; Community Cloud does not guarantee local-file durability across restarts
 - Streamlit UI with 7 pages
-- 58 tests passing
+- 60 tests passing
 - Streamlit Community Cloud uses Pandas by default; install `requirements-spark.txt` and Java 17 only for local Spark demonstrations
 - Phone-width upload picker verified; supports CSV, TSV, XLS/XLSX, JSON/JSONL/NDJSON, and Parquet
 - Upload headers are normalized; ambiguous duplicate columns are rejected
@@ -45,7 +46,7 @@ None — clean state.
 - PySpark requires Java to be installed (falls back to Pandas if unavailable)
 
 ## LAST SUCCESSFUL TEST
-`python -m pytest tests/ -q` — 58 passed (2026-10-03)
+`python -m pytest tests/ -q` — 60 passed (2026-10-03)
 
 ## CURRENT ERROR
 None.
@@ -61,6 +62,7 @@ None.
 - Using PySpark for BDA demonstration (Pandas fallback)
 - Using scikit-learn (Linear Regression baseline and tree ensembles) for ML
 - Using SQLite for decision persistence
+- Local SQLite remains the configured store. Community Cloud may discard local files on restart or redeployment, so do not describe its history as durable without a remote database.
 - Synthetic dataset (13,077 rows) for demo purposes
 - Target variable: quantity (sales/demand prediction)
 - Sample data has 16 products, 4 categories, 4 regions, 21 months

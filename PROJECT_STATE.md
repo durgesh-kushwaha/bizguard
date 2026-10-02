@@ -30,7 +30,9 @@
 - ✅ Decision simulators (pricing, inventory, marketing)
 - ✅ Scenario analysis (Conservative/Expected/Optimistic)
 - ✅ Decision contracts (full contract creation)
-- ✅ SQLite persistence (save/retrieve/delete decisions)
+- ✅ SQLite persistence (save/retrieve/update/delete decisions; local database file)
+- ✅ Decision simulations survive Streamlit reruns until saved; saves are read back for verification
+- ✅ Decision History records actual outcomes and compares matching numeric metrics
 - ✅ Streamlit app with 7-page navigation
 - ✅ Overview page (KPIs, trends, signals)
 - ✅ Supported business-table formats available from Overview and Data Explorer on desktop and mobile layouts
@@ -40,7 +42,7 @@
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 58 tests passing (data, BDA/Spark, ML, decisions, utils)
+- ✅ 60 tests passing (including decision-history workflow and existing-database migration coverage)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
 - ✅ Streamlit Cloud uses Pandas without Java/PySpark install-time dependencies
@@ -61,16 +63,17 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 58 passed (2026-10-03)
+`python -m pytest tests/ -q` — 60 passed (2026-10-03)
 
 ## Last Git Commit
-`fix: version and retrain demand forecasting`
+`fix: persist decision simulations across Streamlit reruns`
 
 ## Important Decisions
 - Python + Streamlit stack (no React/Angular)
 - PySpark for BDA with Pandas fallback
 - scikit-learn for ML (Linear Regression baseline and tree ensembles)
 - SQLite for decision persistence
+- Streamlit Community Cloud local-file persistence is not guaranteed across restarts; durable shared history needs a separately configured remote database.
 - Synthetic dataset (13,077 rows) for demonstration
 - Target variable: quantity (demand prediction)
 

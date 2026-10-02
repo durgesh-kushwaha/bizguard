@@ -112,6 +112,8 @@ The application opens at `http://localhost:8501`.
 
 The app uses Pandas by default, so Streamlit Community Cloud does not need Java or PySpark. To enable the optional Spark demonstration locally, install `requirements-spark.txt` and Java 17 or newer.
 
+Decision history uses a local SQLite file. Streamlit Community Cloud does not guarantee local-file persistence across restarts or redeployments; use a separately configured remote database when durable cloud history is required.
+
 ## 📖 How to Use
 
 ### 1. Load Data
