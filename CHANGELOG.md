@@ -2,13 +2,18 @@
 
 ## [Unreleased]
 
+### 2026-10-02 — Mobile and Tabular Upload Formats
+- **feat:** Accept CSV, TSV, XLS/XLSX, JSON, JSON Lines, and Parquet business data files
+- **fix:** Read legacy `.xls` workbooks with the correct engine
+- **test:** Verify file-format loaders and the upload picker at a phone-sized viewport; full suite passes (50 tests)
+
 ### 2026-10-02 — UI Polish and Hardening
 - **fix:** Make CSV/Excel upload available from the Overview screen, including after data is loaded
 - **fix:** Normalize uploaded column names and reject duplicate normalized headers
 - **fix:** Validate empty datasets, infinite numeric values, discount bounds, and return counts
 - **fix:** Clear stale analysis results when the source dataset changes
 - **fix:** Avoid reloading an unchanged Streamlit upload during page interactions
-- **test:** Add BDA KPI and PySpark pipeline coverage; full suite passes (44 tests)
+- **test:** Add BDA KPI and PySpark pipeline coverage; full suite passes (44 tests at that checkpoint)
 - **docs:** Update setup and project status to reflect the verified build
 
 ### 2026-10-02 — Initial Build

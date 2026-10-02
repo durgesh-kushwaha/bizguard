@@ -10,15 +10,15 @@ No required project task remains. The app is available at `http://localhost:8517
 
 ## LAST COMPLETED TASK
 - Completed UI and data hardening, BDA test coverage, and documentation review
-- 44/44 tests passing, including the local PySpark pipeline
+- 50/50 tests passing, including file-format and local PySpark coverage
 - App responds at `http://localhost:8517`
 
 ## CURRENT FILES BEING MODIFIED
 None — clean state.
 
 ## WHAT WORKS
-- Data loading (CSV, Excel, sample data)
-- Direct CSV/Excel upload from Overview, with validation and cleaning in Data Explorer
+- Data loading (CSV, TSV, XLS/XLSX, JSON/JSON Lines, Parquet, sample data)
+- Direct desktop/mobile upload from Overview and Data Explorer, with validation and cleaning in Data Explorer
 - Data validation with detailed error reporting
 - Data cleaning with documented rules
 - Feature engineering (temporal, lag, rolling, business features)
@@ -33,7 +33,8 @@ None — clean state.
 - Decision contracts with assumptions, risks, monitoring
 - SQLite decision persistence
 - Streamlit UI with 7 pages
-- 44 tests passing
+- 50 tests passing
+- Phone-width upload picker verified; supports CSV, TSV, XLS/XLSX, JSON/JSONL/NDJSON, and Parquet
 - Upload headers are normalized; ambiguous duplicate columns are rejected
 - Empty data and invalid numeric/business values receive validation errors
 - Replacing a dataset clears dependent cleaning, Spark, forecast, and model results
@@ -43,7 +44,7 @@ None — clean state.
 - PySpark requires Java to be installed (falls back to Pandas if unavailable)
 
 ## LAST SUCCESSFUL TEST
-`python -m pytest tests/ -q` — 44 passed (2026-10-02)
+`python -m pytest tests/ -q` — 50 passed (2026-10-02)
 
 ## CURRENT ERROR
 None.

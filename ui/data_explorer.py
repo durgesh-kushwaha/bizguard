@@ -11,7 +11,7 @@ Allows users to:
 import streamlit as st
 import pandas as pd
 import logging
-from src.data.loader import load_file, load_sample_data
+from src.data.loader import SUPPORTED_FILE_TYPES, load_file, load_sample_data
 from src.data.validator import validate_dataset
 from src.data.cleaner import clean_dataset
 from src.utils.formatting import format_number, severity_emoji
@@ -49,7 +49,7 @@ def _render_upload_section():
     """Render file upload section."""
     st.markdown("### Upload Your Data")
     st.markdown("""
-    Upload a CSV or Excel file with your business transaction data.
+    Upload a business data table from your device or a connected file provider.
     
     **Required columns:** `date`, `order_id`, `product_id`, `product_name`, `category`,
     `quantity`, `unit_price`, `discount`, `cost_per_unit`, `marketing_spend`, `returns`,
@@ -57,9 +57,9 @@ def _render_upload_section():
     """)
     
     uploaded_file = st.file_uploader(
-        "Choose a file",
-        type=["csv", "xlsx", "xls"],
-        help="Supported formats: CSV, Excel (.xlsx, .xls)",
+        "Choose a business data file",
+        type=SUPPORTED_FILE_TYPES,
+        help="CSV, TSV, Excel, JSON, JSON Lines, or Parquet files",
     )
     
     if uploaded_file is not None:
@@ -84,7 +84,7 @@ def _render_upload_section():
             st.error(f"❌ Failed to load file: {e}")
         except Exception as e:
             logger.exception("Could not load uploaded business data")
-            st.error("The file could not be loaded. Check that it is a valid CSV or Excel workbook.")
+            st.error("The file could not be loaded. Check that it is a supported, readable business data file.")
 
 
 def _render_sample_section():

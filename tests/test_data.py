@@ -85,6 +85,74 @@ class TestDataLoader:
         with pytest.raises(ValueError, match="duplicated"):
             load_csv(csv_path)
 
+    def test_load_tsv(self, tmp_path):
+        from src.data.loader import load_file
+
+        path = tmp_path / "sales.tsv"
+        path.write_text("order_id\tquantity\nA1\t3\n")
+
+        loaded, metadata = load_file(path)
+        assert loaded.loc[0, "quantity"] == 3
+        assert metadata["file_type"] == "TSV"
+
+    def test_load_json_and_json_lines(self, tmp_path):
+        from src.data.loader import load_file
+
+        records = [{"Order_ID": "A1", "quantity": 3}]
+        json_path = tmp_path / "sales.json"
+        json_path.write_text('[{"Order_ID":"A1","quantity":3}]')
+        lines_path = tmp_path / "sales.jsonl"
+        lines_path.write_text('{"Order_ID":"A1","quantity":3}\n')
+
+        for path in (json_path, lines_path):
+            loaded, metadata = load_file(path)
+            assert loaded.loc[0, "order_id"] == records[0]["Order_ID"]
+            assert metadata["rows_loaded"] == 1
+
+    def test_load_xlsx(self, tmp_path):
+        from src.data.loader import load_file
+
+        path = tmp_path / "sales.xlsx"
+        pd.DataFrame({"Order_ID": ["A1"], "quantity": [3]}).to_excel(path, index=False)
+
+        loaded, metadata = load_file(path)
+        assert loaded.loc[0, "quantity"] == 3
+        assert metadata["file_type"] == "Excel"
+
+    def test_xls_uses_legacy_excel_reader(self, tmp_path, monkeypatch):
+        from src.data import loader
+
+        path = tmp_path / "sales.xls"
+        path.touch()
+        calls = []
+
+        def fake_read_excel(file_path, engine):
+            calls.append(engine)
+            return pd.DataFrame({"Order_ID": ["A1"]})
+
+        monkeypatch.setattr(loader.pd, "read_excel", fake_read_excel)
+        loaded, _ = loader.load_file(path)
+        assert calls == ["xlrd"]
+        assert loaded.loc[0, "order_id"] == "A1"
+
+    def test_load_parquet(self, tmp_path):
+        from src.data.loader import load_file
+
+        path = tmp_path / "sales.parquet"
+        pd.DataFrame({"Order_ID": ["A1"], "quantity": [3]}).to_parquet(path)
+
+        loaded, metadata = load_file(path)
+        assert loaded.loc[0, "quantity"] == 3
+        assert metadata["file_type"] == "Parquet"
+
+    def test_unsupported_file_type_has_helpful_message(self, tmp_path):
+        from src.data.loader import load_file
+
+        path = tmp_path / "sales.pdf"
+        path.touch()
+        with pytest.raises(ValueError, match="Unsupported file type"):
+            load_file(path)
+
 
 class TestDataValidator:
     """Tests for data validation module."""

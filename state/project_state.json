@@ -27,19 +27,20 @@
     "Build decision contracts",
     "Build SQLite persistence",
     "Build Streamlit UI (7 pages)",
-    "Create 44 tests (all passing)",
+    "Create 50 tests (all passing)",
     "Create README and documentation",
     "Harden data upload state and validation",
     "Add BDA KPI and Spark pipeline tests",
-    "Complete UI and documentation review"
+    "Complete UI and documentation review",
+    "Add desktop and mobile support for common tabular upload formats"
   ],
   "pending_tasks": [
     "Optional screenshots for presentation materials"
   ],
   "blocked_tasks": [],
   "known_bugs": [],
-  "last_test": "44 passed in 11.68s (2026-10-02)",
-  "last_commit": "feat: harden data ingestion and BDA coverage",
+  "last_test": "50 passed in 12.08s (2026-10-02)",
+  "last_commit": "feat: support mobile tabular uploads",
   "next_action": "None required; preserve the user's current layout",
   "last_updated": "2026-10-02"
 }

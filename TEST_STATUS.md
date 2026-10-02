@@ -5,17 +5,17 @@
 ## Summary
 | Suite | Status | Pass | Fail | Skip |
 |-------|--------|------|------|------|
-| Data | ✅ PASSED | 15 | 0 | 0 |
+| Data | ✅ PASSED | 21 | 0 | 0 |
 | BDA/Spark | ✅ PASSED | 3 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
 | ML | ✅ PASSED | 8 | 0 | 0 |
 | Utils/DB | ✅ PASSED | 7 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **44** | **0** | **0** |
+| **Total** | **✅ ALL PASS** | **50** | **0** | **0** |
 
 ## Last Test Run
 ```
 python -m pytest tests/ -q
-44 passed in 11.68s
+50 passed in 12.08s
 Date: 2026-10-02
 ```
 
@@ -25,6 +25,8 @@ Date: 2026-10-02
 - ✅ TestDataLoader::test_load_sample_data
 - ✅ TestDataLoader::test_load_csv_from_path
 - ✅ TestDataLoader::test_load_invalid_file
+- ✅ CSV header normalization and duplicate-header rejection
+- ✅ TSV, JSON, JSON Lines, XLSX, XLS engine routing, Parquet, and unsupported-format handling
 - ✅ TestDataValidator::test_validate_valid_data
 - ✅ TestDataValidator::test_validate_missing_columns
 - ✅ TestDataValidator::test_validate_negative_values

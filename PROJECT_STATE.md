@@ -15,7 +15,7 @@
 - ✅ Configuration files created
 - ✅ Documentation framework (9 state files + 8 docs)
 - ✅ Sample dataset generated (13,077 rows, 16 products, 4 categories, 4 regions)
-- ✅ Data loading module (CSV, Excel, sample data)
+- ✅ Data loading module (CSV, TSV, XLS/XLSX, JSON/JSON Lines, Parquet, and sample data)
 - ✅ Data validation module (schema, types, quality)
 - ✅ Data cleaning module (duplicates, missing values, derived columns)
 - ✅ Feature engineering module (temporal, lag, rolling, business features)
@@ -33,14 +33,14 @@
 - ✅ SQLite persistence (save/retrieve/delete decisions)
 - ✅ Streamlit app with 7-page navigation
 - ✅ Overview page (KPIs, trends, signals)
-- ✅ CSV/Excel upload available from Overview and Data Explorer
+- ✅ Supported business-table formats available from Overview and Data Explorer on desktop and mobile layouts
 - ✅ Data Explorer page (upload, validate, clean, Spark)
 - ✅ Analytics page (revenue, products, marketing, inventory, regional)
 - ✅ Forecasting page (train, evaluate, forecast)
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 44 tests passing (data, BDA/Spark, ML, decisions, utils)
+- ✅ 50 tests passing (data, BDA/Spark, ML, decisions, utils)
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
 - ✅ Upload validation and dataset-change state handling hardened
@@ -59,7 +59,7 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 44 passed (2026-10-02)
+`python -m pytest tests/ -q` — 50 passed (2026-10-02)
 
 ## Last Git Commit
 `feat: harden data ingestion and BDA coverage`

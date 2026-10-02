@@ -99,7 +99,7 @@ def validate_data_quality(df: pd.DataFrame) -> List[Dict]:
         return [{
             "problem": "The dataset has no rows.",
             "why_it_matters": "Analytics, cleaning, and model training need at least one business record.",
-            "expected": "A CSV or Excel sheet with a header row and business records.",
+            "expected": "A supported tabular file with column headers and business records.",
             "suggested_fix": "Upload a non-empty dataset or load the sample data.",
             "severity": "error",
         }]

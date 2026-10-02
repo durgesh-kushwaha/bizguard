@@ -4,7 +4,7 @@ This document maps BizGuard's implementation to Big Data Analytics (BDA) course 
 
 | BDA Concept | BizGuard Implementation | Files |
 |---|---|---|
-| Data Ingestion | CSV/Excel file loading with validation | `src/data/loader.py` |
+| Data Ingestion | CSV, TSV, Excel, JSON, JSON Lines, and Parquet loading with validation | `src/data/loader.py` |
 | Data Preprocessing | Schema validation, cleaning, missing value handling | `src/data/validator.py`, `src/data/cleaner.py` |
 | Distributed Processing | PySpark DataFrame operations | `src/bda/spark_processing.py` |
 | Data Transformation | Derived column computation, type casting | `src/bda/spark_processing.py` |
@@ -30,7 +30,7 @@ This document maps BizGuard's implementation to Big Data Analytics (BDA) course 
 ## Processing Pipeline
 
 ```
-Raw CSV/Excel → Pandas DataFrame → Spark DataFrame → 
+Raw tabular file → Pandas DataFrame → Spark DataFrame →
 Cleaning → Transformation → Aggregation → 
 Analytical Output → Visualization
 ```

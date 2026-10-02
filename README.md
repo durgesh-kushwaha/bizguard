@@ -115,7 +115,9 @@ The application opens at `http://localhost:8501`.
 
 ### 1. Load Data
 - Go to **Data Explorer** → Click "Load Sample Dataset"
-- Or upload your own CSV/Excel file
+- Or upload your own CSV, TSV, Excel, JSON, JSON Lines, or Parquet business data file from desktop or mobile
+
+Supported uploads are structured business tables (`.csv`, `.tsv`, `.xls`, `.xlsx`, `.json`, `.jsonl`, `.ndjson`, `.parquet`). PDFs, images, and other document formats are not accepted.
 
 ### 2. Clean & Process
 - Review data quality report

@@ -7,6 +7,8 @@
 
 ## Installation
 
+The uploader accepts CSV, TSV, Excel (`.xls`, `.xlsx`), JSON, JSON Lines (`.jsonl`, `.ndjson`), and Parquet business tables. It is available on desktop and mobile browsers. Image and document formats are not transaction tables and are not accepted.
+
 ### 1. Clone the Repository
 ```bash
 git clone <repository-url>

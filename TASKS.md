@@ -56,17 +56,18 @@
 ## Phase 7 — UI Polish
 - [COMPLETED] Preserve and smoke-check the current Streamlit layout
 - [COMPLETED] Add a visible Overview upload and replace-dataset control
+- [COMPLETED] Support common table formats and check the phone-width upload layout
 - [COMPLETED] Add clear upload validation feedback and safe fallback messages
 - [COMPLETED] Keep cleaned data and analysis results tied to the selected dataset
 
 ## Phase 8 — Testing & Hardening
-- [COMPLETED] Data tests (15 tests passing)
+- [COMPLETED] Data tests (21 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
 - [COMPLETED] ML tests (8 tests passing)
 - [COMPLETED] Utility tests (7 tests passing)
 - [COMPLETED] BDA KPI and Spark pipeline tests (3 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (44 tests)
+- [COMPLETED] Full suite passes (50 tests)
 
 ## Phase 9 — Documentation & Demo
 - [COMPLETED] README

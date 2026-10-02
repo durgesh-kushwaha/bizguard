@@ -10,7 +10,7 @@ import logging
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from src.data.loader import load_file
+from src.data.loader import SUPPORTED_FILE_TYPES, load_file
 from src.utils.formatting import format_currency, format_number, format_percentage, severity_emoji
 
 logger = logging.getLogger(__name__)
@@ -23,18 +23,18 @@ def render():
 
     if st.session_state.get("cleaned_df") is None:
         st.markdown("### Upload your business data")
-        st.caption("Start with a CSV or Excel file. You can review and clean it in Data Explorer.")
+        st.caption("Choose a business data file from your device or a connected file provider.")
         uploaded_file = st.file_uploader(
-            "Choose a CSV or Excel file",
-            type=["csv", "xlsx", "xls"],
+            "Choose a business data file",
+            type=SUPPORTED_FILE_TYPES,
             key="overview_data_upload",
         )
         _load_uploaded_file(uploaded_file)
     else:
         with st.expander("Upload or replace dataset"):
             uploaded_file = st.file_uploader(
-                "Choose a CSV or Excel file",
-                type=["csv", "xlsx", "xls"],
+                "Choose a business data file",
+                type=SUPPORTED_FILE_TYPES,
                 key="overview_data_upload",
             )
             _load_uploaded_file(uploaded_file)
@@ -221,4 +221,4 @@ def _load_uploaded_file(uploaded_file):
         st.error(f"Could not load this file: {error}")
     except Exception:
         logger.exception("Could not load business data from the Overview page")
-        st.error("Could not load this file. Check that it is a valid CSV or Excel workbook.")
+        st.error("Could not load this file. Check that it is a supported, readable business data file.")
