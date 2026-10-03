@@ -12,7 +12,7 @@ Every validation failure includes a clear explanation of:
 import pandas as pd
 import numpy as np
 from typing import List, Dict
-from config.settings import REQUIRED_COLUMNS, NUMERIC_COLUMNS, DATE_COLUMNS
+from config.settings import OPTIONAL_COLUMNS, REQUIRED_COLUMNS, NUMERIC_COLUMNS, DATE_COLUMNS
 
 
 def validate_schema(df: pd.DataFrame) -> List[Dict]:
@@ -35,6 +35,15 @@ def validate_schema(df: pd.DataFrame) -> List[Dict]:
                 "suggested_fix": f"Add a column named '{col}' to your dataset, or rename an existing similar column.",
                 "severity": "error",
             })
+
+    if not {"unit_price", "revenue"}.intersection(df.columns):
+        issues.append({
+            "problem": "Missing a sale value column: provide unit price or revenue.",
+            "why_it_matters": "BizGuard needs a price or recorded sales value to calculate revenue and analyze sales.",
+            "expected": "A unit_price column, a revenue column, or a recognizable equivalent in the upload.",
+            "suggested_fix": "Include the item's selling price or the row's sales amount.",
+            "severity": "error",
+        })
     
     return issues
 
@@ -82,6 +91,20 @@ def validate_data_types(df: pd.DataFrame) -> List[Dict]:
                         "suggested_fix": f"Ensure all values in '{col}' are valid dates (e.g., 2024-01-15).",
                         "severity": "error",
                     })
+
+    missing_optional = [
+        col for col in OPTIONAL_COLUMNS
+        if col not in df.columns and col not in {"unit_price", "revenue"}
+    ]
+    if missing_optional:
+        issues.append({
+            "problem": "Some optional business fields are not present.",
+            "why_it_matters": "Product, cost, marketing, returns, customer, or inventory views may be limited.",
+            "expected": "These fields are only needed for the related analyses; they are not required to forecast quantity.",
+            "suggested_fix": "Add any available fields to unlock the related views. Missing source values are not filled with invented data.",
+            "severity": "warning",
+            "columns": missing_optional,
+        })
     
     return issues
 
@@ -107,10 +130,12 @@ def validate_data_quality(df: pd.DataFrame) -> List[Dict]:
     # Check for missing values
     missing = df.isnull().sum()
     cols_with_missing = missing[missing > 0]
+    critical_columns = set(REQUIRED_COLUMNS)
+    critical_columns.update({"unit_price", "revenue"}.intersection(df.columns))
     if len(cols_with_missing) > 0:
         for col, count in cols_with_missing.items():
             pct = round(count / len(df) * 100, 1)
-            severity = "error" if pct > 50 else "warning"
+            severity = "error" if pct > 50 and col in critical_columns else "warning"
             issues.append({
                 "problem": f"Column '{col}' has {count} missing values ({pct}%).",
                 "why_it_matters": "Missing values can distort analytics and cause ML model failures.",

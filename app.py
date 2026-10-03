@@ -29,37 +29,10 @@ st.set_page_config(
 
 def main():
     """Main application with sidebar navigation."""
-    
-    # Custom CSS for consistent styling
-    st.markdown("""
-    <style>
-    /* Clean card-like metric containers */
-    div[data-testid="metric-container"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 12px 16px;
-    }
-    
-    /* Sidebar styling */
-    [data-testid="stSidebarContent"] { padding-top: 1rem; }
-    
-    /* Section headers */
-    .section-header {
-        color: #1f2937;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Signal cards */
-    .signal-card {
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+
+    requested_page = st.session_state.pop("_requested_page", None)
+    if requested_page:
+        st.session_state["navigation_page"] = requested_page
     
     # Sidebar
     with st.sidebar:
@@ -79,6 +52,7 @@ def main():
                 "ℹ️ About",
             ],
             label_visibility="collapsed",
+            key="navigation_page",
         )
         
         st.markdown("---")

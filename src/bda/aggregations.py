@@ -61,24 +61,36 @@ def monthly_revenue(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with columns: year_month, total_revenue, total_profit,
         total_orders, total_units, avg_order_value, profit_margin
     """
-    spark_df = _ensure_spark_df(df)
+    if not {"date", "revenue"}.issubset(df.columns):
+        return pd.DataFrame(columns=["year_month", "total_revenue"])
+
+    spark_columns = {
+        "date", "revenue", "gross_profit", "order_id", "quantity", "profit_margin"
+    }
+    if "net_revenue" in df.columns:
+        spark_columns.add("net_revenue")
+    spark_df = _ensure_spark_df(df) if spark_columns.issubset(df.columns) else None
     
     if spark_df is not None:
         try:
             from pyspark.sql import functions as F
             
+            metrics = [
+                F.round(F.sum("revenue"), 2).alias("total_revenue"),
+                F.round(F.sum("gross_profit"), 2).alias("total_profit"),
+                F.countDistinct("order_id").alias("total_orders"),
+                F.sum("quantity").alias("total_units"),
+                F.round(F.avg("revenue"), 2).alias("avg_order_value"),
+                F.round(F.avg("profit_margin"), 4).alias("avg_profit_margin"),
+            ]
+            if "net_revenue" in df.columns:
+                metrics.append(F.round(F.sum("net_revenue"), 2).alias("total_net_revenue"))
+
             result = (
                 spark_df
                 .withColumn("year_month", F.date_format(F.col("date"), "yyyy-MM"))
                 .groupBy("year_month")
-                .agg(
-                    F.round(F.sum("revenue"), 2).alias("total_revenue"),
-                    F.round(F.sum("gross_profit"), 2).alias("total_profit"),
-                    F.countDistinct("order_id").alias("total_orders"),
-                    F.sum("quantity").alias("total_units"),
-                    F.round(F.avg("revenue"), 2).alias("avg_order_value"),
-                    F.round(F.avg("profit_margin"), 4).alias("avg_profit_margin"),
-                )
+                .agg(*metrics)
                 .orderBy("year_month")
             )
             
@@ -90,14 +102,20 @@ def monthly_revenue(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["year_month"] = pd.to_datetime(df["date"]).dt.to_period("M").astype(str)
     
-    result = df.groupby("year_month").agg(
-        total_revenue=("revenue", "sum"),
-        total_profit=("gross_profit", "sum"),
-        total_orders=("order_id", "nunique"),
-        total_units=("quantity", "sum"),
-        avg_order_value=("revenue", "mean"),
-        avg_profit_margin=("profit_margin", "mean"),
-    ).round(2).reset_index()
+    aggregations = {"total_revenue": ("revenue", "sum")}
+    if "gross_profit" in df.columns:
+        aggregations["total_profit"] = ("gross_profit", "sum")
+    if "order_id" in df.columns:
+        aggregations["total_orders"] = ("order_id", "nunique")
+        aggregations["avg_order_value"] = ("revenue", "mean")
+    if "quantity" in df.columns:
+        aggregations["total_units"] = ("quantity", "sum")
+    if "profit_margin" in df.columns:
+        aggregations["avg_profit_margin"] = ("profit_margin", "mean")
+    if "net_revenue" in df.columns:
+        aggregations["total_net_revenue"] = ("net_revenue", "sum")
+
+    result = df.groupby("year_month").agg(**aggregations).round(2).reset_index()
     
     return result.sort_values("year_month")
 
@@ -112,7 +130,15 @@ def product_performance(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with product performance metrics.
     """
-    spark_df = _ensure_spark_df(df)
+    group_columns = ["product_id", "product_name", "category"]
+    if not set(group_columns + ["revenue", "quantity"]).issubset(df.columns):
+        return pd.DataFrame()
+
+    spark_columns = set(group_columns + [
+        "revenue", "gross_profit", "quantity", "unit_price", "profit_margin",
+        "discount", "returns", "marketing_spend",
+    ])
+    spark_df = _ensure_spark_df(df) if spark_columns.issubset(df.columns) else None
     
     if spark_df is not None:
         try:
@@ -139,16 +165,20 @@ def product_performance(df: pd.DataFrame) -> pd.DataFrame:
             logger.warning(f"Spark product_performance failed, using Pandas: {e}")
     
     # Pandas fallback
-    result = df.groupby(["product_id", "product_name", "category"]).agg(
-        total_revenue=("revenue", "sum"),
-        total_profit=("gross_profit", "sum"),
-        total_units=("quantity", "sum"),
-        avg_price=("unit_price", "mean"),
-        avg_margin=("profit_margin", "mean"),
-        avg_discount=("discount", "mean"),
-        total_returns=("returns", "sum"),
-        total_marketing=("marketing_spend", "sum"),
-    ).round(2).reset_index()
+    aggregations = {
+        "total_revenue": ("revenue", "sum"),
+        "total_units": ("quantity", "sum"),
+    }
+    optional = {
+        "total_profit": ("gross_profit", "sum"),
+        "avg_price": ("unit_price", "mean"),
+        "avg_margin": ("profit_margin", "mean"),
+        "avg_discount": ("discount", "mean"),
+        "total_returns": ("returns", "sum"),
+        "total_marketing": ("marketing_spend", "sum"),
+    }
+    aggregations.update({name: spec for name, spec in optional.items() if spec[0] in df.columns})
+    result = df.groupby(group_columns).agg(**aggregations).round(2).reset_index()
     
     return result.sort_values("total_revenue", ascending=False)
 
@@ -163,7 +193,14 @@ def category_analysis(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with category metrics.
     """
-    spark_df = _ensure_spark_df(df)
+    if "category" not in df.columns or not {"revenue", "quantity"}.issubset(df.columns):
+        return pd.DataFrame()
+
+    spark_columns = {
+        "category", "revenue", "gross_profit", "quantity", "product_id",
+        "profit_margin", "marketing_spend", "returns",
+    }
+    spark_df = _ensure_spark_df(df) if spark_columns.issubset(df.columns) else None
     
     if spark_df is not None:
         try:
@@ -189,15 +226,19 @@ def category_analysis(df: pd.DataFrame) -> pd.DataFrame:
             logger.warning(f"Spark category_analysis failed, using Pandas: {e}")
     
     # Pandas fallback
-    result = df.groupby("category").agg(
-        total_revenue=("revenue", "sum"),
-        total_profit=("gross_profit", "sum"),
-        total_units=("quantity", "sum"),
-        num_products=("product_id", "nunique"),
-        avg_margin=("profit_margin", "mean"),
-        total_marketing=("marketing_spend", "sum"),
-        total_returns=("returns", "sum"),
-    ).round(2).reset_index()
+    aggregations = {
+        "total_revenue": ("revenue", "sum"),
+        "total_units": ("quantity", "sum"),
+    }
+    optional = {
+        "total_profit": ("gross_profit", "sum"),
+        "num_products": ("product_id", "nunique"),
+        "avg_margin": ("profit_margin", "mean"),
+        "total_marketing": ("marketing_spend", "sum"),
+        "total_returns": ("returns", "sum"),
+    }
+    aggregations.update({name: spec for name, spec in optional.items() if spec[0] in df.columns})
+    result = df.groupby("category").agg(**aggregations).round(2).reset_index()
     
     return result.sort_values("total_revenue", ascending=False)
 
@@ -212,7 +253,13 @@ def regional_analysis(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with regional metrics.
     """
-    spark_df = _ensure_spark_df(df)
+    if "region" not in df.columns or not {"revenue", "quantity"}.issubset(df.columns):
+        return pd.DataFrame()
+
+    spark_columns = {
+        "region", "revenue", "gross_profit", "quantity", "order_id", "profit_margin"
+    }
+    spark_df = _ensure_spark_df(df) if spark_columns.issubset(df.columns) else None
     
     if spark_df is not None:
         try:
@@ -236,13 +283,17 @@ def regional_analysis(df: pd.DataFrame) -> pd.DataFrame:
             logger.warning(f"Spark regional_analysis failed, using Pandas: {e}")
     
     # Pandas fallback
-    result = df.groupby("region").agg(
-        total_revenue=("revenue", "sum"),
-        total_profit=("gross_profit", "sum"),
-        total_units=("quantity", "sum"),
-        total_orders=("order_id", "nunique"),
-        avg_margin=("profit_margin", "mean"),
-    ).round(2).reset_index()
+    aggregations = {
+        "total_revenue": ("revenue", "sum"),
+        "total_units": ("quantity", "sum"),
+    }
+    optional = {
+        "total_profit": ("gross_profit", "sum"),
+        "total_orders": ("order_id", "nunique"),
+        "avg_margin": ("profit_margin", "mean"),
+    }
+    aggregations.update({name: spec for name, spec in optional.items() if spec[0] in df.columns})
+    result = df.groupby("region").agg(**aggregations).round(2).reset_index()
     
     return result.sort_values("total_revenue", ascending=False)
 
@@ -262,7 +313,13 @@ def marketing_effectiveness(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with marketing metrics per category.
     """
-    spark_df = _ensure_spark_df(df)
+    if not {"marketing_spend", "category", "revenue"}.issubset(df.columns):
+        return pd.DataFrame()
+
+    spark_columns = {
+        "marketing_spend", "category", "revenue", "gross_profit"
+    }
+    spark_df = _ensure_spark_df(df) if spark_columns.issubset(df.columns) else None
     
     if spark_df is not None:
         try:
@@ -298,22 +355,25 @@ def marketing_effectiveness(df: pd.DataFrame) -> pd.DataFrame:
     
     # Pandas fallback
     mkt_df = df[df["marketing_spend"] > 0].copy()
-    result = mkt_df.groupby("category").agg(
-        total_revenue=("revenue", "sum"),
-        total_marketing=("marketing_spend", "sum"),
-        total_profit=("gross_profit", "sum"),
-    ).round(2).reset_index()
+    aggregations = {
+        "total_revenue": ("revenue", "sum"),
+        "total_marketing": ("marketing_spend", "sum"),
+    }
+    if "gross_profit" in mkt_df.columns:
+        aggregations["total_profit"] = ("gross_profit", "sum")
+    result = mkt_df.groupby("category").agg(**aggregations).round(2).reset_index()
     
     result["roas"] = np.where(
         result["total_marketing"] > 0,
         (result["total_revenue"] / result["total_marketing"]).round(2),
         0
     )
-    result["profit_per_marketing_dollar"] = np.where(
-        result["total_marketing"] > 0,
-        (result["total_profit"] / result["total_marketing"]).round(2),
-        0
-    )
+    if "total_profit" in result.columns:
+        result["profit_per_marketing_dollar"] = np.where(
+            result["total_marketing"] > 0,
+            (result["total_profit"] / result["total_marketing"]).round(2),
+            0
+        )
     
     return result.sort_values("roas", ascending=False)
 
@@ -334,14 +394,21 @@ def inventory_analysis(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with inventory metrics per product.
     """
-    # Pandas implementation (Spark adds limited value for this computation)
-    result = df.groupby(["product_id", "product_name", "category"]).agg(
-        avg_inventory=("inventory_units", "mean"),
-        avg_daily_sales=("quantity", "mean"),
-        total_units_sold=("quantity", "sum"),
-        total_revenue=("revenue", "sum"),
-        avg_cost=("cost_per_unit", "mean"),
-    ).round(2).reset_index()
+    required = {"product_id", "product_name", "category", "inventory_units", "quantity"}
+    if not required.issubset(df.columns):
+        return pd.DataFrame()
+
+    aggregations = {
+        "avg_inventory": ("inventory_units", "mean"),
+        "avg_daily_sales": ("quantity", "mean"),
+        "total_units_sold": ("quantity", "sum"),
+    }
+    if "revenue" in df.columns:
+        aggregations["total_revenue"] = ("revenue", "sum")
+    if "cost_per_unit" in df.columns:
+        aggregations["avg_cost"] = ("cost_per_unit", "mean")
+
+    result = df.groupby(["product_id", "product_name", "category"]).agg(**aggregations).round(2).reset_index()
     
     # Stock cover in days
     result["stock_cover_days"] = np.where(
@@ -351,7 +418,8 @@ def inventory_analysis(df: pd.DataFrame) -> pd.DataFrame:
     )
     
     # Capital locked in inventory
-    result["inventory_capital"] = (result["avg_inventory"] * result["avg_cost"]).round(2)
+    if "avg_cost" in result.columns:
+        result["inventory_capital"] = (result["avg_inventory"] * result["avg_cost"]).round(2)
     
     # Sales velocity classification
     median_velocity = result["avg_daily_sales"].median()

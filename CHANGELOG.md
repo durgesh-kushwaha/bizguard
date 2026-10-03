@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### 2026-10-03 — Multi-File Sales and Returns
+- **fix:** Prepare valid uploads on load so Overview shows analytics immediately
+- **feat:** Accept multiple reports from Overview and Data Explorer
+- **fix:** Link return quantities and value only to unique sales order IDs; disclose unmatched returns and exclude them from net revenue
+- **feat:** Show net revenue after matched returns in overview and monthly analytics
+- **fix:** Explain when there is too little history for model training or a demand forecast
+- **test:** Cover paired reports, multi-file controls, and invalid-upload navigation; full suite passes (72 tests)
+
+### 2026-10-03 — Marketplace Column Recognition
+- **fix:** Map common marketplace headers, including order dates, sub-order IDs, taxable sales, and delivery states
+- **fix:** Keep unknown columns, reject ambiguous matches, and allow sales data without optional cost or product fields
+- **fix:** Leave unavailable profit and product metrics blank instead of reporting misleading zeroes
+- **docs:** Explain automatic header matching in the upload instructions
+- **test:** Cover marketplace aliases, near-typos, optional fields, and partial analytics; full suite passes (66 tests)
+
 ### 2026-10-03 — Decision History Workflow
 - **fix:** Keep successful pricing, inventory, and marketing simulations available after Streamlit reruns so the save form can submit
 - **fix:** Verify saved decisions by reading them back; report storage failures separately from an empty history

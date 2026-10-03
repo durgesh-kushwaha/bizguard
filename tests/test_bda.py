@@ -14,8 +14,8 @@ def test_compute_kpis_handles_empty_data():
         "total_profit": 0,
         "num_orders": 0,
         "units_sold": 0,
-        "avg_order_value": 0,
-        "profit_margin": 0,
+        "avg_order_value": None,
+        "profit_margin": None,
     }
 
 
@@ -31,6 +31,57 @@ def test_compute_kpis_uses_order_count_for_average_order_value():
     assert result["num_orders"] == 2
     assert result["avg_order_value"] == 87.5
     assert result["profit_margin"] == 0.2
+
+
+def test_partial_marketplace_data_keeps_unavailable_metrics_blank():
+    from src.bda.aggregations import (
+        category_analysis,
+        inventory_analysis,
+        marketing_effectiveness,
+        monthly_revenue,
+        product_performance,
+        regional_analysis,
+    )
+
+    sales = pd.DataFrame({
+        "date": pd.to_datetime(["2026-01-31", "2026-02-01"]),
+        "order_id": ["A1", "A2"],
+        "quantity": [1, 2],
+        "revenue": [100.0, 250.0],
+        "category": ["610910", "610910"],
+        "region": ["Delhi", "Delhi"],
+    })
+
+    kpis = compute_kpis(sales)
+    monthly = monthly_revenue(sales)
+    by_category = category_analysis(sales)
+    by_region = regional_analysis(sales)
+
+    assert kpis["total_revenue"] == 350.0
+    assert kpis["total_profit"] is None
+    assert monthly["total_revenue"].tolist() == [100.0, 250.0]
+    assert "total_profit" not in monthly.columns
+    assert by_category.loc[0, "total_units"] == 3
+    assert by_region.loc[0, "total_revenue"] == 350.0
+    assert product_performance(sales).empty
+    assert marketing_effectiveness(sales).empty
+    assert inventory_analysis(sales).empty
+
+
+def test_monthly_revenue_shows_sales_after_matched_returns():
+    from src.bda.aggregations import monthly_revenue
+
+    sales = pd.DataFrame({
+        "date": pd.to_datetime(["2026-01-10", "2026-01-11"]),
+        "revenue": [100.0, 50.0],
+        "net_revenue": [75.0, 50.0],
+        "quantity": [1, 1],
+    })
+
+    monthly = monthly_revenue(sales)
+
+    assert monthly.loc[0, "total_revenue"] == 150
+    assert monthly.loc[0, "total_net_revenue"] == 125
 
 
 def test_spark_pipeline_computes_business_columns():

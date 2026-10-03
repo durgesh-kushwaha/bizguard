@@ -67,6 +67,15 @@ def _render_training(df: pd.DataFrame):
             st.session_state.model_evaluations = None
             st.rerun()
         return
+
+    from src.data.feature_engineering import prepare_ml_features
+    usable_rows = len(prepare_ml_features(df))
+    if usable_rows < 50:
+        st.warning(
+            f"This upload leaves {usable_rows} training rows after lag features; "
+            "at least 50 are needed. Add more dated sales history before training."
+        )
+        return
     
     st.markdown("---")
     
@@ -240,6 +249,15 @@ def _render_forecast(df: pd.DataFrame):
     st.markdown("### Demand Forecast")
 
     st.caption("Daily-demand engine v3 · Models are checked against chronological holdouts and a weekly baseline.")
+    from src.ml.demand_forecast import MIN_HISTORY_DAYS
+    dates = pd.to_datetime(df["date"], errors="coerce").dropna()
+    history_days = (dates.max().normalize() - dates.min().normalize()).days + 1 if len(dates) else 0
+    enough_history = history_days >= MIN_HISTORY_DAYS
+    if not enough_history:
+        st.warning(
+            f"This upload covers {history_days} calendar days. Demand forecasting needs "
+            f"at least {MIN_HISTORY_DAYS}; add more months of sales history."
+        )
     # Forecast controls
     col1, col2 = st.columns(2)
 
@@ -249,7 +267,7 @@ def _render_forecast(df: pd.DataFrame):
     with col2:
         forecast_days = st.slider("Forecast Period (days)", 7, 90, 30)
 
-    if st.button("📈 Generate Forecast", type="primary"):
+    if st.button("📈 Generate Forecast", type="primary", disabled=not enough_history):
         with st.spinner("Generating forecast..."):
             try:
                 from src.ml.demand_forecast import forecast_daily_demand

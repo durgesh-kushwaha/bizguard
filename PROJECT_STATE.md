@@ -42,16 +42,23 @@
 - ✅ Decision simulator page (pricing, inventory, marketing)
 - ✅ Decision history page (view, compare, delete)
 - ✅ About page
-- ✅ 60 tests passing (including decision-history workflow and existing-database migration coverage)
+- ✅ 72 tests passing, including marketplace header mapping and paired sales/returns uploads
 - ✅ App launches successfully
 - ✅ Local PySpark 4.2.0 pipeline verified with Java 17
 - ✅ Streamlit Cloud uses Pandas without Java/PySpark install-time dependencies
 - ✅ PySpark remains available as an optional local demonstration dependency
+- ✅ Marketplace upload headers map to BizGuard's standard business fields
+- ✅ Overview and Data Explorer accept multiple related reports
+- ✅ Return rows link to unique sales orders; unmatched rows are excluded from net revenue and disclosed
+- ✅ Valid uploads are validated and cleaned before the dashboard renders
+- ✅ Forecast controls explain when the uploaded history is too short for training
+- ✅ Ambiguous matches are rejected and unrecognized columns are kept
 - ✅ Upload validation and dataset-change state handling hardened
+- ✅ Custom inline CSS removed; the interface uses native Streamlit styling
 - ✅ Current Streamlit layout smoke-checked with the sample dataset
 
 ## Current Task
-Phases 0-9 complete. UI polish, hardening, and documentation review are complete.
+Phases 0-9 complete. Multi-file sales/returns uploads and the dashboard handoff are tested.
 
 ## Next Task
 No required work remains. Screenshots are optional presentation material.
@@ -63,7 +70,7 @@ None
 No known blockers. Invalid uploads are stopped before cleaning and analysis.
 
 ## Last Successful Test
-`python -m pytest tests/ -q` — 60 passed (2026-10-03)
+`python -m pytest tests/ -q` — 72 passed (2026-10-03)
 
 ## Last Git Commit
 `fix: persist decision simulations across Streamlit reruns`

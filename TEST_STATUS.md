@@ -5,17 +5,18 @@
 ## Summary
 | Suite | Status | Pass | Fail | Skip |
 |-------|--------|------|------|------|
-| Data | ✅ PASSED | 21 | 0 | 0 |
-| BDA/Spark | ✅ PASSED | 5 | 0 | 0 |
+| Data | ✅ PASSED | 29 | 0 | 0 |
+| BDA/Spark | ✅ PASSED | 7 | 0 | 0 |
+| UI Upload | ✅ PASSED | 2 | 0 | 0 |
 | Decisions | ✅ PASSED | 11 | 0 | 0 |
 | ML | ✅ PASSED | 14 | 0 | 0 |
 | Utils/DB | ✅ PASSED | 9 | 0 | 0 |
-| **Total** | **✅ ALL PASS** | **60** | **0** | **0** |
+| **Total** | **✅ ALL PASS** | **72** | **0** | **0** |
 
 ## Last Test Run
 ```
 python -m pytest tests/ -q
-60 passed
+72 passed
 Date: 2026-10-03
 ```
 
@@ -26,6 +27,12 @@ Date: 2026-10-03
 - ✅ TestDataLoader::test_load_csv_from_path
 - ✅ TestDataLoader::test_load_invalid_file
 - ✅ CSV header normalization and duplicate-header rejection
+- ✅ Marketplace aliases and close header typos map to business fields
+- ✅ Ambiguous matches are rejected and unknown columns are preserved
+- ✅ Optional fields may be absent; reported revenue is retained
+- ✅ Multiple sales files combine only when their business schemas match
+- ✅ Return rows reduce sales only when their order ID uniquely matches
+- ✅ Valid uploaded reports are cleaned before the Overview renders
 - ✅ TSV, JSON, JSON Lines, XLSX, XLS engine routing, Parquet, and unsupported-format handling
 - ✅ TestDataValidator::test_validate_valid_data
 - ✅ TestDataValidator::test_validate_missing_columns
@@ -74,6 +81,12 @@ Date: 2026-10-03
 - ✅ Order-based average order value and profit margin
 - ✅ PySpark cleaning and derived revenue/profit (PySpark 4.2.0, Java 17)
 - ✅ Spark unavailable and Spark conversion fallback explanations
+- ✅ Partial data leaves unavailable business metrics blank
+- ✅ Monthly summary includes net revenue after matched returns
+
+### Upload UI Test (test_ui_upload.py)
+- ✅ Overview and Data Explorer expose multi-file upload controls
+- ✅ Prepared sales and returns render without Streamlit exceptions
 
 ## Test Commands
 ```bash

@@ -3,6 +3,7 @@ Tests for data loading, validation, and cleaning modules.
 """
 
 import pytest
+from io import BytesIO
 import pandas as pd
 import numpy as np
 import sys
@@ -75,6 +76,104 @@ class TestDataLoader:
 
         loaded, _ = load_csv(csv_path)
         assert list(loaded.columns) == ["date", "order_id"]
+
+    def test_load_maps_marketplace_headers(self, tmp_path):
+        from src.data.loader import load_file
+
+        path = tmp_path / "marketplace.csv"
+        path.write_text(
+            "Order_Date,Sub_Order_Num,Quanity,Total_Taxable_Sale_Value,"
+            "End_Customer_State_New,HSN_Code,Platform_Note\n"
+            "2026-01-31,SUB-1,2,240.00,MAHARASHTRA,610910,keep me\n"
+        )
+
+        loaded, metadata = load_file(path)
+
+        assert loaded.loc[0, "date"] == pd.Timestamp("2026-01-31")
+        assert loaded.loc[0, "order_id"] == "SUB-1"
+        assert loaded.loc[0, "quantity"] == 2
+        assert loaded.loc[0, "revenue"] == 240.0
+        assert loaded.loc[0, "region"] == "MAHARASHTRA"
+        assert loaded.loc[0, "category"] == 610910
+        assert loaded.loc[0, "platform_note"] == "keep me"
+        assert any(item["match"] == "similar name" for item in metadata["column_mappings"])
+
+    def test_load_reports_colliding_header_matches(self, tmp_path):
+        from src.data.loader import load_csv
+
+        path = tmp_path / "ambiguous.csv"
+        path.write_text("order_id,order number\nA1,A-001\n")
+
+        with pytest.raises(ValueError, match="same business field"):
+            load_csv(path)
+
+    def test_sales_and_returns_are_linked_without_counting_refunds_as_sales(self, tmp_path):
+        from src.data.loader import load_business_files
+
+        sales = tmp_path / "sales.csv"
+        sales.write_text(
+            "order_id,date,quantity,revenue\n"
+            "A,2026-01-01,1,100\n"
+            "B,2026-01-02,1,50\n"
+        )
+        returns = tmp_path / "sales_return.csv"
+        returns.write_text(
+            "order_id,date,quantity,revenue,cancel_return_date\n"
+            "A,2026-01-01,1,25,2026-01-10\n"
+            "OLD,2025-12-20,1,5,2026-01-05\n"
+        )
+
+        loaded, metadata = load_business_files([sales, returns])
+
+        assert len(loaded) == 2
+        assert loaded["revenue"].sum() == 150
+        assert loaded.loc[loaded["order_id"] == "A", "returns"].item() == 1
+        assert loaded.loc[loaded["order_id"] == "A", "returned_revenue"].item() == 25
+        assert metadata["return_summary"]["matched_rows"] == 1
+        assert metadata["return_summary"]["unmatched_rows"] == 1
+        assert metadata["return_summary"]["unmatched_value"] == 5
+
+    def test_return_report_needs_sales_file(self, tmp_path):
+        from src.data.loader import load_business_files
+
+        returns = tmp_path / "returns.csv"
+        returns.write_text(
+            "order_id,date,quantity,revenue,cancel_return_date\n"
+            "A,2026-01-01,1,25,2026-01-10\n"
+        )
+
+        with pytest.raises(ValueError, match="at least one sales report"):
+            load_business_files([returns])
+
+    def test_upload_workflow_cleans_valid_sales_and_return_reports(self):
+        from ui.session_state import prepare_uploaded_files
+
+        class Upload(BytesIO):
+            def __init__(self, name, content):
+                super().__init__(content.encode())
+                self.name = name
+                self.size = len(content)
+                self.file_id = name
+
+        sales = Upload(
+            "sales.csv",
+            "order_id,date,quantity,revenue\nA,2026-01-01,1,100\nB,2026-01-02,1,50\n",
+        )
+        returns = Upload(
+            "sales_return.csv",
+            "order_id,date,quantity,revenue,cancel_return_date\n"
+            "A,2026-01-01,1,25,2026-01-10\nOLD,2025-12-20,1,5,2026-01-05\n",
+        )
+        state = {"models": {"old": True}}
+
+        validation = prepare_uploaded_files([sales, returns], state, "upload_signature")
+
+        assert validation["is_valid"]
+        assert state["cleaned_df"] is not None
+        assert state["cleaned_df"]["revenue"].sum() == 150
+        assert state["cleaned_df"]["net_revenue"].sum() == 125
+        assert state["models"] is None
+        assert prepare_uploaded_files([sales, returns], state, "upload_signature") is None
 
     def test_load_rejects_duplicate_normalized_columns(self, tmp_path):
         from src.data.loader import load_csv
@@ -166,6 +265,36 @@ class TestDataValidator:
         
         assert result["is_valid"] is True
         assert len(result["errors"]) == 0
+
+    def test_validate_sales_data_without_optional_fields(self):
+        from src.data.validator import validate_dataset
+
+        df = pd.DataFrame({
+            "date": pd.date_range("2026-01-01", periods=3),
+            "quantity": [1, 2, 1],
+            "revenue": [100.0, 200.0, 100.0],
+        })
+
+        result = validate_dataset(df)
+
+        assert result["is_valid"]
+        assert not result["errors"]
+        assert any("optional business fields" in issue["problem"] for issue in result["warnings"])
+
+    def test_empty_unrecognized_column_does_not_block_sales_data(self):
+        from src.data.validator import validate_dataset
+
+        df = pd.DataFrame({
+            "date": pd.to_datetime(["2026-01-31"]),
+            "quantity": [1],
+            "revenue": [100.0],
+            "enrollment_no": [None],
+        })
+
+        result = validate_dataset(df)
+
+        assert result["is_valid"]
+        assert any("enrollment_no" in issue["problem"] for issue in result["warnings"])
     
     def test_validate_missing_columns(self):
         """Test that missing required columns are detected."""
@@ -275,3 +404,18 @@ class TestDataCleaner:
         assert result["revenue"].iloc[0] == 900.0
         assert result["cost"].iloc[0] == 500.0
         assert result["gross_profit"].iloc[0] == 400.0
+
+    def test_cleaner_keeps_reported_revenue_and_derives_unit_price(self):
+        from src.data.cleaner import clean_dataset
+
+        df = pd.DataFrame({
+            "date": pd.date_range("2026-01-01", periods=3),
+            "quantity": [1, 2, 1],
+            "revenue": [125.0, 400.0, 80.0],
+        })
+
+        cleaned, _ = clean_dataset(df)
+
+        assert cleaned["revenue"].tolist() == [125.0, 400.0, 80.0]
+        assert cleaned["unit_price"].tolist() == [125.0, 200.0, 80.0]
+        assert "gross_profit" not in cleaned.columns

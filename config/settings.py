@@ -16,15 +16,19 @@ APP_VERSION = "1.0.0"
 
 # Data settings
 REQUIRED_COLUMNS = [
-    "date", "order_id", "product_id", "product_name", "category",
-    "quantity", "unit_price", "discount", "cost_per_unit",
-    "marketing_spend", "returns", "customer_id", "region",
-    "inventory_units"
+    "date", "quantity"
+]
+
+OPTIONAL_COLUMNS = [
+    "order_id", "product_id", "product_name", "category", "unit_price",
+    "revenue", "discount", "cost_per_unit", "marketing_spend", "returns",
+    "customer_id", "region", "inventory_units",
 ]
 
 NUMERIC_COLUMNS = [
     "quantity", "unit_price", "discount", "cost_per_unit",
-    "marketing_spend", "returns", "inventory_units"
+    "marketing_spend", "returns", "inventory_units", "revenue",
+    "returned_revenue",
 ]
 
 DATE_COLUMNS = ["date"]
@@ -32,7 +36,7 @@ DATE_COLUMNS = ["date"]
 # Derived columns
 DERIVED_COLUMNS = [
     "revenue", "gross_profit", "profit_margin", "net_revenue",
-    "discount_rate", "sales_velocity"
+    "discount_rate", "sales_velocity", "returned_revenue",
 ]
 
 # ML settings

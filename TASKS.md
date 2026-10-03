@@ -14,6 +14,8 @@
 - [COMPLETED] Initial Git commit
 
 ## Phase 1 — Data Ingestion
+- [COMPLETED] Recognize marketplace header aliases and preserve unknown columns
+- [COMPLETED] Reject ambiguous header matches with a clear message
 - [COMPLETED] Build CSV loader
 - [COMPLETED] Build Excel loader
 - [COMPLETED] Build data validator
@@ -62,15 +64,19 @@
 - [COMPLETED] Support common table formats and check the phone-width upload layout
 - [COMPLETED] Add clear upload validation feedback and safe fallback messages
 - [COMPLETED] Keep cleaned data and analysis results tied to the selected dataset
+- [COMPLETED] Accept multiple related uploads from Overview and Data Explorer
+- [COMPLETED] Link return rows to unique sales order IDs and disclose unmatched rows
+- [COMPLETED] Prepare valid uploads immediately so Overview renders after upload
 
 ## Phase 8 — Testing & Hardening
-- [COMPLETED] Data tests (21 tests passing)
+- [COMPLETED] Data tests (29 tests passing)
 - [COMPLETED] Decision engine tests (11 tests passing)
 - [COMPLETED] ML tests (14 tests passing)
 - [COMPLETED] Utility and database tests (9 tests passing)
-- [COMPLETED] BDA KPI and Spark pipeline tests (5 tests passing)
+- [COMPLETED] BDA KPI and Spark pipeline tests (7 tests passing)
 - [COMPLETED] Review empty data, malformed headers, non-finite values, discounts, and return counts
-- [COMPLETED] Full suite passes (60 tests)
+- [COMPLETED] Upload UI tests (2 passing)
+- [COMPLETED] Full suite passes (72 tests)
 - [COMPLETED] Report Spark startup/conversion errors without presenting Pandas fallback as Spark success
 - [COMPLETED] Keep Streamlit Community Cloud on the Pandas path; make Spark optional for local use
 

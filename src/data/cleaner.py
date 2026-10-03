@@ -61,8 +61,8 @@ def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
             report["cleaning_steps"].append(f"Removed {invalid_dates} rows with invalid dates.")
     
     # Step 3: Convert numeric columns
-    numeric_cols = ["quantity", "unit_price", "discount", "cost_per_unit",
-                    "marketing_spend", "returns", "inventory_units"]
+    numeric_cols = ["quantity", "unit_price", "revenue", "discount", "cost_per_unit",
+                    "marketing_spend", "returns", "returned_revenue", "inventory_units"]
     
     for col in numeric_cols:
         if col in cleaned.columns:
@@ -76,7 +76,7 @@ def clean_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
         if col in cleaned.columns:
             missing = cleaned[col].isna().sum()
             if missing > 0:
-                if col in ["discount", "returns", "marketing_spend"]:
+                if col in ["discount", "returns", "returned_revenue", "marketing_spend"]:
                     # These can reasonably default to 0
                     cleaned[col] = cleaned[col].fillna(0)
                     report["cleaning_steps"].append(
@@ -163,8 +163,20 @@ def compute_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
     
     if "unit_price" in result.columns:
         result["net_price"] = (result["unit_price"] * (1 - result["discount_rate"])).round(2)
-    
-    if all(col in result.columns for col in ["quantity", "net_price"]):
+
+    if "unit_price" not in result.columns and all(
+        col in result.columns for col in ["quantity", "revenue"]
+    ):
+        result["unit_price"] = np.where(
+            result["quantity"] > 0,
+            result["revenue"] / result["quantity"],
+            np.nan,
+        ).round(2)
+        result["net_price"] = result["unit_price"]
+
+    if "revenue" not in result.columns and all(
+        col in result.columns for col in ["quantity", "net_price"]
+    ):
         result["revenue"] = (result["quantity"] * result["net_price"]).round(2)
     
     if all(col in result.columns for col in ["quantity", "cost_per_unit"]):
@@ -180,7 +192,11 @@ def compute_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
             0.0
         )
     
-    if all(col in result.columns for col in ["revenue", "returns", "net_price"]):
+    if all(col in result.columns for col in ["revenue", "returned_revenue"]):
+        result["net_revenue"] = (
+            result["revenue"] - result["returned_revenue"]
+        ).round(2)
+    elif all(col in result.columns for col in ["revenue", "returns", "net_price"]):
         result["net_revenue"] = (result["revenue"] - result["returns"] * result["net_price"]).round(2)
     
     return result

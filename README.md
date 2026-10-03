@@ -118,13 +118,14 @@ Decision history uses a local SQLite file. Streamlit Community Cloud does not gu
 
 ### 1. Load Data
 - Go to **Data Explorer** → Click "Load Sample Dataset"
-- Or upload your own CSV, TSV, Excel, JSON, JSON Lines, or Parquet business data file from desktop or mobile
+- Or upload one or more CSV, TSV, Excel, JSON, JSON Lines, or Parquet reports from desktop or mobile. Related sales and returns files can be selected together.
+- Common marketplace headers are matched to BizGuard fields automatically; unmatched columns stay in the data, and ambiguous matches are flagged.
+- Return rows are linked by a unique order ID. Unmatched returns are reported and left out of net sales.
 
 Supported uploads are structured business tables (`.csv`, `.tsv`, `.xls`, `.xlsx`, `.json`, `.jsonl`, `.ndjson`, `.parquet`). PDFs, images, and other document formats are not accepted.
 
 ### 2. Clean & Process
-- Review data quality report
-- Click "Clean & Preprocess Data"
+- Valid uploads are checked and cleaned on load; review field mappings and quality notes in **Data Explorer**
 - Run Spark Processing (demonstrates BDA)
 
 ### 3. View Analytics

@@ -63,10 +63,20 @@ def _render_revenue_analytics(df: pd.DataFrame):
         x=monthly["year_month"], y=monthly["total_revenue"],
         name="Revenue", marker_color="#2563eb", opacity=0.7,
     ))
-    fig.add_trace(go.Bar(
-        x=monthly["year_month"], y=monthly["total_profit"],
-        name="Profit", marker_color="#16a34a", opacity=0.7,
-    ))
+    if "total_profit" in monthly.columns:
+        fig.add_trace(go.Bar(
+            x=monthly["year_month"], y=monthly["total_profit"],
+            name="Profit", marker_color="#16a34a", opacity=0.7,
+        ))
+    else:
+        st.caption("Profit is unavailable because this upload has no unit-cost field.")
+
+    if "total_net_revenue" in monthly.columns:
+        fig.add_trace(go.Scatter(
+            x=monthly["year_month"], y=monthly["total_net_revenue"],
+            name="Net Revenue After Returns", mode="lines+markers",
+            line=dict(color="#dc2626", width=2),
+        ))
     
     if "avg_profit_margin" in monthly.columns:
         fig.add_trace(go.Scatter(
@@ -95,6 +105,8 @@ def _render_revenue_analytics(df: pd.DataFrame):
             display_monthly["total_revenue"] = display_monthly["total_revenue"].apply(lambda x: format_currency(x))
         if "total_profit" in display_monthly.columns:
             display_monthly["total_profit"] = display_monthly["total_profit"].apply(lambda x: format_currency(x))
+        if "total_net_revenue" in display_monthly.columns:
+            display_monthly["total_net_revenue"] = display_monthly["total_net_revenue"].apply(format_currency)
         st.dataframe(display_monthly, use_container_width=True, hide_index=True)
 
 
@@ -124,37 +136,38 @@ def _render_product_analytics(df: pd.DataFrame):
             xaxis_title="Total Revenue (₹)", yaxis_title="",
         )
         st.plotly_chart(fig, use_container_width=True)
+
+    if "avg_margin" in products.columns:
+        with col2:
+            st.markdown("#### Profit Margin by Product")
+            fig = px.bar(
+                products.head(10), x="avg_margin", y="product_name",
+                orientation="h", color="category",
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
+            fig.update_layout(
+                height=400, yaxis=dict(autorange="reversed"),
+                xaxis_title="Average Margin", yaxis_title="",
+            )
+            st.plotly_chart(fig, use_container_width=True)
     
-    with col2:
-        st.markdown("#### Profit Margin by Product")
-        fig = px.bar(
-            products.head(10), x="avg_margin", y="product_name",
-            orientation="h", color="category",
+    if "avg_margin" in products.columns:
+        st.markdown("#### Revenue vs Margin (Product Portfolio)")
+        st.caption("Ideally, products should be in the top-right quadrant (high revenue + high margin).")
+
+        fig = px.scatter(
+            products, x="total_revenue", y="avg_margin",
+            size="total_units", color="category",
+            hover_name="product_name",
             color_discrete_sequence=px.colors.qualitative.Set2,
+            size_max=40,
         )
         fig.update_layout(
-            height=400, yaxis=dict(autorange="reversed"),
-            xaxis_title="Average Margin", yaxis_title="",
+            height=400,
+            xaxis_title="Total Revenue (₹)",
+            yaxis_title="Average Profit Margin",
         )
         st.plotly_chart(fig, use_container_width=True)
-    
-    # Revenue vs Margin scatter
-    st.markdown("#### Revenue vs Margin (Product Portfolio)")
-    st.caption("Ideally, products should be in the top-right quadrant (high revenue + high margin).")
-    
-    fig = px.scatter(
-        products, x="total_revenue", y="avg_margin",
-        size="total_units", color="category",
-        hover_name="product_name",
-        color_discrete_sequence=px.colors.qualitative.Set2,
-        size_max=40,
-    )
-    fig.update_layout(
-        height=400,
-        xaxis_title="Total Revenue (₹)",
-        yaxis_title="Average Profit Margin",
-    )
-    st.plotly_chart(fig, use_container_width=True)
     
     # Product table
     with st.expander("📊 Product Details Table"):
@@ -286,17 +299,21 @@ def _render_regional_analytics(df: pd.DataFrame):
         )
         st.plotly_chart(fig, use_container_width=True)
     
-    with col2:
-        st.markdown("#### Profit Margin by Region")
-        fig = px.bar(
-            regions, x="region", y="avg_margin",
-            color="region",
-            color_discrete_sequence=px.colors.qualitative.Set2,
-        )
-        fig.update_layout(
-            height=350, xaxis_title="Region", yaxis_title="Average Margin",
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    if "avg_margin" in regions.columns:
+        with col2:
+            st.markdown("#### Profit Margin by Region")
+            fig = px.bar(
+                regions, x="region", y="avg_margin",
+                color="region",
+                color_discrete_sequence=px.colors.qualitative.Set2,
+            )
+            fig.update_layout(
+                height=350, xaxis_title="Region", yaxis_title="Average Margin",
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    else:
+        with col2:
+            st.info("Profit margin needs a unit-cost field.")
     
     with st.expander("📊 Regional Details"):
         st.dataframe(regions, use_container_width=True, hide_index=True)

@@ -11,11 +11,11 @@ Allows users to:
 import streamlit as st
 import pandas as pd
 import logging
-from src.data.loader import SUPPORTED_FILE_TYPES, load_file, load_sample_data
+from src.data.loader import SUPPORTED_FILE_TYPES, load_sample_data
 from src.data.validator import validate_dataset
 from src.data.cleaner import clean_dataset
 from src.utils.formatting import format_number, severity_emoji
-from ui.session_state import clear_analysis_results
+from ui.session_state import clear_analysis_results, prepare_uploaded_files
 
 logger = logging.getLogger(__name__)
 
@@ -49,37 +49,33 @@ def _render_upload_section():
     """Render file upload section."""
     st.markdown("### Upload Your Data")
     st.markdown("""
-    Upload a business data table from your device or a connected file provider.
+    Upload one or more related business reports from your device.
     
-    **Required columns:** `date`, `order_id`, `product_id`, `product_name`, `category`,
-    `quantity`, `unit_price`, `discount`, `cost_per_unit`, `marketing_spend`, `returns`,
-    `customer_id`, `region`, `inventory_units`
+    **Required:** a transaction date, quantity, and either a unit price or sales amount.
+    Product, customer, cost, marketing, return, region, and stock fields are optional.
+    BizGuard recognizes common marketplace header names automatically.
     """)
     
     uploaded_file = st.file_uploader(
-        "Choose a business data file",
+        "Choose business data files",
         type=SUPPORTED_FILE_TYPES,
-        help="CSV, TSV, Excel, JSON, JSON Lines, or Parquet files",
+        accept_multiple_files=True,
+        help="Choose matching sales exports and a returns report together. CSV, TSV, Excel, JSON, JSON Lines, or Parquet files are supported.",
+        key="data_explorer_upload",
     )
-    
-    if uploaded_file is not None:
-        signature = (
-            uploaded_file.name,
-            uploaded_file.size,
-            getattr(uploaded_file, "file_id", None),
-        )
-        if signature == st.session_state.get("uploaded_file_signature"):
-            return
 
+    if uploaded_file:
         try:
-            with st.spinner("Loading data..."):
-                df, metadata = load_file(uploaded_file)
-                clear_analysis_results(st.session_state)
-                st.session_state.df = df
-                st.session_state.loading_metadata = metadata
-                st.session_state.uploaded_file_signature = signature
-            
-            st.success(f"✅ Loaded {metadata['rows_loaded']:,} rows and {metadata['columns_loaded']} columns.")
+            with st.spinner("Loading and preparing reports..."):
+                validation = prepare_uploaded_files(
+                    uploaded_file,
+                    st.session_state,
+                    "data_explorer_upload_signature",
+                )
+            if validation is not None and validation["is_valid"]:
+                st.success("Reports loaded, validated, and prepared for analysis.")
+            elif validation is not None:
+                st.warning("The reports loaded, but validation found issues. Review them below.")
         except ValueError as e:
             st.error(f"❌ Failed to load file: {e}")
         except Exception as e:
@@ -104,7 +100,6 @@ def _render_sample_section():
                 clear_analysis_results(st.session_state)
                 st.session_state.df = df
                 st.session_state.loading_metadata = metadata
-                st.session_state.uploaded_file_signature = None
             
             st.success(f"✅ Sample data loaded: {metadata['rows_loaded']:,} rows.")
             st.rerun()
@@ -119,6 +114,9 @@ def _render_data_info():
     metadata = st.session_state.get("loading_metadata", {})
     
     st.markdown("### 📋 Dataset Information")
+    source_files = metadata.get("source_files", [])
+    if source_files:
+        st.caption("Source files: " + ", ".join(source_files))
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -131,6 +129,32 @@ def _render_data_info():
     with col4:
         duplicates = df.duplicated().sum()
         st.metric("Duplicate Rows", format_number(duplicates))
+
+    mappings = metadata.get("column_mappings", [])
+    if mappings:
+        with st.expander("Recognized upload headers"):
+            mapping_table = pd.DataFrame(mappings).rename(columns={
+                "source": "Uploaded column",
+                "field": "BizGuard field",
+                "match": "Recognition",
+                "source_file": "File",
+            })
+            st.dataframe(mapping_table, use_container_width=True, hide_index=True)
+    uncertain = metadata.get("uncertain_columns", [])
+    if uncertain:
+        headers = ", ".join(item["source"] for item in uncertain)
+        st.warning(f"Some headers were left unchanged because their meaning was unclear: {headers}.")
+
+    return_summary = metadata.get("return_summary")
+    if return_summary:
+        st.info(
+            f"Returns: {return_summary['rows']:,} rows, "
+            f"{return_summary['matched_rows']:,} linked to unique sales orders; "
+            f"matched taxable return value {return_summary['matched_value']:,.2f} "
+            f"out of {return_summary['return_value']:,.2f} reported."
+        )
+        if return_summary["unmatched_rows"]:
+            st.warning(return_summary["match_note"])
     
     # Column information
     with st.expander("📊 Column Details"):
@@ -161,6 +185,8 @@ def _render_validation_report():
                 st.markdown(f"**Why it matters:** {issue['why_it_matters']}")
                 st.markdown(f"**Expected:** {issue['expected']}")
                 st.markdown(f"**Suggested fix:** {issue['suggested_fix']}")
+                if issue.get("columns"):
+                    st.markdown(f"**Fields not found:** {', '.join(issue['columns'])}")
     
     if validation["warnings"]:
         st.markdown("#### Warnings")
@@ -169,6 +195,8 @@ def _render_validation_report():
                 st.markdown(f"**Why it matters:** {issue['why_it_matters']}")
                 st.markdown(f"**Expected:** {issue['expected']}")
                 st.markdown(f"**Suggested fix:** {issue['suggested_fix']}")
+                if issue.get("columns"):
+                    st.markdown(f"**Fields not found:** {', '.join(issue['columns'])}")
 
 
 def _render_cleaning_section():
@@ -228,21 +256,41 @@ def _render_data_preview():
     if show_cleaned:
         tab_raw, tab_clean = st.tabs(["Raw Data", "Cleaned Data"])
         with tab_raw:
-            st.dataframe(st.session_state.df.head(100), use_container_width=True)
+            st.dataframe(_preview_rows(st.session_state.df), use_container_width=True)
         with tab_clean:
-            st.dataframe(st.session_state.cleaned_df.head(100), use_container_width=True)
+            st.dataframe(_preview_rows(st.session_state.cleaned_df), use_container_width=True)
     else:
-        st.dataframe(st.session_state.df.head(100), use_container_width=True)
+        st.dataframe(_preview_rows(st.session_state.df), use_container_width=True)
     
     # Basic statistics
     with st.expander("📊 Descriptive Statistics"):
         display_df = st.session_state.cleaned_df if show_cleaned else st.session_state.df
-        st.dataframe(display_df.describe().round(2), use_container_width=True)
+        numeric_columns = display_df.select_dtypes(include="number")
+        st.dataframe(numeric_columns.describe().round(2), use_container_width=True)
+
+
+def _preview_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep date values readable in the tabular preview."""
+    preview = df.head(100).copy()
+    if "date" in preview.columns:
+        preview["date"] = pd.to_datetime(preview["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    return preview
 
 
 def _render_spark_processing():
     """Render PySpark processing section."""
     if st.session_state.get("cleaned_df") is None:
+        return
+
+    spark_fields = {
+        "product_id", "unit_price", "cost_per_unit", "discount", "returns"
+    }
+    missing_fields = sorted(spark_fields - set(st.session_state.cleaned_df.columns))
+    if missing_fields:
+        st.info(
+            "The Spark demonstration needs these source fields: "
+            f"{', '.join(missing_fields)}. Pandas analysis and forecasting are still available."
+        )
         return
     
     st.markdown("### ⚡ Big Data Processing (PySpark)")

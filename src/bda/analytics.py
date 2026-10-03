@@ -36,20 +36,26 @@ def compute_kpis(df: pd.DataFrame) -> Dict:
         Dict of KPI name -> value.
     """
     total_revenue = df["revenue"].sum() if "revenue" in df.columns else 0
-    total_profit = df["gross_profit"].sum() if "gross_profit" in df.columns else 0
-    num_orders = df["order_id"].nunique() if "order_id" in df.columns else len(df)
+    total_profit = df["gross_profit"].sum() if "gross_profit" in df.columns else None
+    num_orders = df["order_id"].nunique() if "order_id" in df.columns else None
     units_sold = df["quantity"].sum() if "quantity" in df.columns else 0
     
-    avg_order_value = total_revenue / num_orders if num_orders > 0 else 0
-    profit_margin = total_profit / total_revenue if total_revenue > 0 else 0
+    avg_order_value = (
+        total_revenue / num_orders
+        if num_orders and num_orders > 0 and "revenue" in df.columns else None
+    )
+    profit_margin = (
+        total_profit / total_revenue
+        if total_profit is not None and total_revenue > 0 else None
+    )
     
     return {
         "total_revenue": round(total_revenue, 2),
-        "total_profit": round(total_profit, 2),
+        "total_profit": round(total_profit, 2) if total_profit is not None else None,
         "num_orders": num_orders,
         "units_sold": int(units_sold),
-        "avg_order_value": round(avg_order_value, 2),
-        "profit_margin": round(profit_margin, 4),
+        "avg_order_value": round(avg_order_value, 2) if avg_order_value is not None else None,
+        "profit_margin": round(profit_margin, 4) if profit_margin is not None else None,
     }
 
 
@@ -130,12 +136,16 @@ def detect_business_signals(df: pd.DataFrame) -> List[Dict]:
                 })
     
     # Signal 3: High returns in any category
-    if "returns" in df.columns and "quantity" in df.columns:
+    if all(col in df.columns for col in ("returns", "quantity", "category")):
         cat_returns = df.groupby("category").agg(
             total_returns=("returns", "sum"),
             total_quantity=("quantity", "sum"),
         ).reset_index()
-        cat_returns["return_rate"] = cat_returns["total_returns"] / cat_returns["total_quantity"]
+        cat_returns["return_rate"] = np.where(
+            cat_returns["total_quantity"] > 0,
+            cat_returns["total_returns"] / cat_returns["total_quantity"],
+            0,
+        )
         
         high_returns = cat_returns[cat_returns["return_rate"] > 0.05]
         for _, row in high_returns.iterrows():

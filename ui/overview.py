@@ -10,8 +10,9 @@ import logging
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from src.data.loader import SUPPORTED_FILE_TYPES, load_file
+from src.data.loader import SUPPORTED_FILE_TYPES
 from src.utils.formatting import format_currency, format_number, format_percentage, severity_emoji
+from ui.session_state import prepare_uploaded_files
 
 logger = logging.getLogger(__name__)
 
@@ -23,24 +24,35 @@ def render():
 
     if st.session_state.get("cleaned_df") is None:
         st.markdown("### Upload your business data")
-        st.caption("Choose a business data file from your device or a connected file provider.")
-        uploaded_file = st.file_uploader(
-            "Choose a business data file",
+        st.caption("Choose one or more business reports from your device.")
+        uploaded_files = st.file_uploader(
+            "Choose business data files",
             type=SUPPORTED_FILE_TYPES,
+            accept_multiple_files=True,
+            help="Select one or more related reports. Choose sales and returns together to match them by order ID.",
             key="overview_data_upload",
         )
-        _load_uploaded_file(uploaded_file)
+        _load_uploaded_files(uploaded_files, "overview_upload_signature")
     else:
         with st.expander("Upload or replace dataset"):
-            uploaded_file = st.file_uploader(
-                "Choose a business data file",
+            uploaded_files = st.file_uploader(
+                "Choose business data files",
                 type=SUPPORTED_FILE_TYPES,
+                accept_multiple_files=True,
+                help="Select one or more related reports. Choose sales and returns together to match them by order ID.",
                 key="overview_data_upload",
             )
-            _load_uploaded_file(uploaded_file)
+            _load_uploaded_files(uploaded_files, "overview_upload_signature")
     
     # Check if data is loaded
     if st.session_state.get("cleaned_df") is None:
+        if st.session_state.get("df") is not None:
+            st.warning("The upload needs a quick review before BizGuard can analyze it.")
+            if st.button("Review upload in Data Explorer"):
+                st.session_state["_requested_page"] = "📁 Data Explorer"
+                st.rerun()
+            return
+
         st.markdown("Or try the built-in synthetic dataset:")
         
         # Offer to load sample data
@@ -50,6 +62,17 @@ def render():
         return
     
     df = st.session_state.cleaned_df
+    return_summary = st.session_state.get("loading_metadata", {}).get("return_summary")
+    if return_summary:
+        matched_value = format_currency(return_summary["matched_value"])
+        st.info(
+            f"Return report: {return_summary['rows']:,} rows, "
+            f"{return_summary['matched_rows']:,} linked to sales. "
+            f"Matched return value: {matched_value}; "
+            f"reported return value: {format_currency(return_summary['return_value'])}."
+        )
+        if return_summary["unmatched_rows"]:
+            st.warning(return_summary["match_note"])
     
     # Compute KPIs
     from src.bda.analytics import compute_kpis, detect_business_signals
@@ -58,19 +81,26 @@ def render():
     # KPI Cards Row
     st.markdown("### Key Performance Indicators")
     col1, col2, col3, col4, col5, col6 = st.columns(6)
+
+    def show_metric(value, formatter):
+        return "Not available" if value is None else formatter(value)
     
     with col1:
-        st.metric("Total Revenue", format_currency(kpis["total_revenue"]))
+        revenue_label = "Gross Revenue" if "net_revenue" in df.columns else "Total Revenue"
+        st.metric(revenue_label, format_currency(kpis["total_revenue"]))
     with col2:
-        st.metric("Total Profit", format_currency(kpis["total_profit"]))
+        st.metric("Total Profit", show_metric(kpis["total_profit"], format_currency))
     with col3:
-        st.metric("Orders", format_number(kpis["num_orders"]))
+        st.metric("Orders", show_metric(kpis["num_orders"], format_number))
     with col4:
         st.metric("Units Sold", format_number(kpis["units_sold"]))
     with col5:
-        st.metric("Avg Order Value", format_currency(kpis["avg_order_value"]))
+        st.metric("Avg Order Value", show_metric(kpis["avg_order_value"], format_currency))
     with col6:
-        st.metric("Profit Margin", format_percentage(kpis["profit_margin"]))
+        st.metric("Profit Margin", show_metric(kpis["profit_margin"], format_percentage))
+
+    if "net_revenue" in df.columns:
+        st.metric("Net Revenue After Matched Returns", format_currency(df["net_revenue"].sum()))
     
     st.markdown("---")
     
@@ -82,7 +112,12 @@ def render():
     col_left, col_right = st.columns(2)
     
     with col_left:
-        st.markdown("### Revenue & Profit Trend")
+        has_profit = "total_profit" in monthly.columns
+        if "total_net_revenue" in monthly.columns:
+            trend_title = "Gross & Net Revenue Trend"
+        else:
+            trend_title = "Revenue & Profit Trend" if has_profit else "Revenue Trend"
+        st.markdown(f"### {trend_title}")
         if len(monthly) > 0:
             fig = go.Figure()
             fig.add_trace(go.Scatter(
@@ -90,11 +125,18 @@ def render():
                 mode="lines+markers", name="Revenue",
                 line=dict(color="#2563eb", width=2),
             ))
-            fig.add_trace(go.Scatter(
-                x=monthly["year_month"], y=monthly["total_profit"],
-                mode="lines+markers", name="Profit",
-                line=dict(color="#16a34a", width=2),
-            ))
+            if has_profit:
+                fig.add_trace(go.Scatter(
+                    x=monthly["year_month"], y=monthly["total_profit"],
+                    mode="lines+markers", name="Profit",
+                    line=dict(color="#16a34a", width=2),
+                ))
+            if "total_net_revenue" in monthly.columns:
+                fig.add_trace(go.Scatter(
+                    x=monthly["year_month"], y=monthly["total_net_revenue"],
+                    mode="lines+markers", name="Net Revenue",
+                    line=dict(color="#dc2626", width=2),
+                ))
             fig.update_layout(
                 height=350, margin=dict(l=0, r=0, t=30, b=0),
                 xaxis_title="Month", yaxis_title="Amount (₹)",
@@ -102,6 +144,8 @@ def render():
                 hovermode="x unified",
             )
             st.plotly_chart(fig, use_container_width=True)
+            if not has_profit:
+                st.caption("Profit is unavailable because this upload has no unit-cost field.")
         else:
             st.warning("Not enough data for trend analysis.")
     
@@ -139,6 +183,8 @@ def render():
                 yaxis=dict(autorange="reversed"),
             )
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Product charts need product IDs, names, categories, sales, and unit counts.")
     
     with col_right2:
         st.markdown("### Revenue by Category")
@@ -188,35 +234,31 @@ def _load_sample_data():
         st.session_state.cleaned_df = cleaned_df
         st.session_state.loading_metadata = metadata
         st.session_state.cleaning_report = cleaning_report
-        st.session_state.uploaded_file_signature = None
         
     except Exception as e:
         st.error(f"Failed to load sample data: {e}")
 
 
-def _load_uploaded_file(uploaded_file):
-    """Load a selected file once and clear results from the previous dataset."""
-    if uploaded_file is None:
-        return
-
-    signature = (
-        uploaded_file.name,
-        uploaded_file.size,
-        getattr(uploaded_file, "file_id", None),
-    )
-    if signature == st.session_state.get("overview_upload_signature"):
+def _load_uploaded_files(uploaded_files, signature_key):
+    """Load a selected report set once and prepare it for the dashboard."""
+    if not uploaded_files:
         return
 
     try:
-        df, metadata = load_file(uploaded_file)
-        from ui.session_state import clear_analysis_results
-
-        clear_analysis_results(st.session_state)
-        st.session_state.df = df
-        st.session_state.loading_metadata = metadata
-        st.session_state.overview_upload_signature = signature
-        st.success(f"Loaded {metadata['rows_loaded']:,} rows. Open Data Explorer to validate and clean the file.")
-        st.rerun()
+        validation = prepare_uploaded_files(uploaded_files, st.session_state, signature_key)
+        if validation is None:
+            return
+        if validation["is_valid"]:
+            summary = st.session_state.loading_metadata.get("return_summary")
+            files = len(st.session_state.loading_metadata.get("source_files", []))
+            st.success(
+                f"Loaded {st.session_state.loading_metadata['rows_loaded']:,} sales rows "
+                f"from {files} file(s) and prepared the data."
+            )
+            if summary and summary["unmatched_rows"]:
+                st.warning(summary["match_note"])
+        else:
+            st.error("The file loaded, but validation found issues. Open Data Explorer to review them.")
     except ValueError as error:
         st.error(f"Could not load this file: {error}")
     except Exception:
