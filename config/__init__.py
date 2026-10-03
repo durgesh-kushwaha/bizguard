@@ -1,0 +1,1 @@
+"""BizGuard application configuration."""
